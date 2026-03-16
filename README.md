@@ -54,6 +54,10 @@ See the full [Roadmap](ROADMAP.md) for details.
 - SVG/PNG circuit export
 - Keyboard shortcuts
 
+### Future Directions
+
+Post-v1.0, we're considering a **quantum kernel emulator** approach that would model quantum phenomena more faithfully — showing 1-to-n qubit relationships and probabilistic measurement collapse in a visceral way. See the [Roadmap](ROADMAP.md) for details.
+
 ## Getting Started
 
 ### Prerequisites

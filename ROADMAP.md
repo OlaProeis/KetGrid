@@ -74,6 +74,16 @@ KetGrid development follows a phased approach. This document tracks what's been 
   - Hybrid CPU/GPU scheduling with automatic backend selection
 - [ ] **WASM target** — web version via egui's WASM support
 
+### Future Consideration: Quantum Kernel Emulator
+
+After v1.0.0, evaluate evolving from state vector simulation to a full **quantum kernel emulator** that explicitly models:
+
+- **1-to-n qubit relationships** — visual representation of how single operations affect the entire quantum register
+- **Probabilistic values that collapse on observation** — measurement as a distinct, visible event rather than just reading amplitudes
+- **True entanglement simulation** — when one qubit is measured, correlated qubits instantly reflect the collapsed state
+
+This approach could make quantum phenomena more visceral and educational, potentially differentiating KetGrid from all existing circuit tools. See Task 43 in tasks.json for details.
+
 ---
 
 ## Version Milestones

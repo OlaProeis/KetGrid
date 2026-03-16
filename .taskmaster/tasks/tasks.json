@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": "12",
+        "id": 12,
         "title": "Set up Cargo workspace and project scaffolding",
         "description": "Initialize Cargo workspace with ketgrid-core, ketgrid-sim, ketgrid-gui crates and basic eframe app shell",
         "details": "Create Cargo.toml workspace root. Add crates/ketgrid-core, ketgrid-sim, ketgrid-gui with dependencies: egui, eframe, serde, serde_json, dirs, nalgebra. Add basic src/main.rs in ketgrid-gui with eframe::App implementation and empty UI. Configure cross-platform build targets.",
@@ -17,7 +17,7 @@
         "updatedAt": "2026-03-16T14:17:23.560Z"
       },
       {
-        "id": "13",
+        "id": 13,
         "title": "Implement Circuit data model in ketgrid-core",
         "description": "Define core structs: Circuit, QubitWire, PlacedGate, GateType enum as specified in PRD",
         "details": "In ketgrid-core/src/circuit.rs: impl Circuit { qubits: Vec<QubitWire>, gates: Vec<PlacedGate>, measurements: Vec<Measurement> }. Define all GateType variants (H,X,Y,Z,S,T,Rx,Ry,Rz,CNOT,CZ,SWAP,Toffoli,Barrier,Identity,Custom). Add derive(Serialize,Deserialize) for all structs.",
@@ -34,7 +34,7 @@
         "updatedAt": "2026-03-16T14:23:38.581Z"
       },
       {
-        "id": "14",
+        "id": 14,
         "title": "Implement QubitWire management",
         "description": "Add methods for qubit wire add/remove/rename/reorder operations",
         "details": "In ketgrid-core/src/wire.rs: impl QubitWire { id: usize, label: String }. Circuit methods: add_qubit(), remove_qubit(usize), rename_qubit(usize, String), reorder_qubits(Vec<usize>). Ensure qubit indices in gates auto-update on wire operations.",
@@ -51,7 +51,7 @@
         "updatedAt": "2026-03-16T14:38:23.306Z"
       },
       {
-        "id": "15",
+        "id": 15,
         "title": "Define gate matrices and properties",
         "description": "Implement GateType matrices using nalgebra for simulation",
         "details": "In ketgrid-core/src/gates.rs: HashMap<GateType, Matrix2<Complex<f64>>> for single-qubit gates (H,X,Y,Z,S,T). Multi-qubit: CNOT(4x4), CZ(4x4), SWAP(4x4), Toffoli(8x8). Rotation gates Rx(θ),Ry(θ),Rz(θ) parameterized. Precompute standard gates, compute rotations dynamically.",
@@ -68,7 +68,7 @@
         "updatedAt": "2026-03-16T14:48:54.816Z"
       },
       {
-        "id": "16",
+        "id": 16,
         "title": "Integrate QuantRS2 StateVectorSimulator",
         "description": "Add QuantRS2 dependency and basic circuit simulation",
         "details": "In ketgrid-sim/Cargo.toml: quant_rs2 = '0.1.2'. In ketgrid-sim/src/statevector.rs: impl StateVectorSimulator { fn new(nqubits: usize) -> Self; fn apply_circuit(&mut self, circuit: &Circuit) }. Fallback to custom if QuantRS2 fails. Use feature flags.",
@@ -86,7 +86,7 @@
         "updatedAt": "2026-03-16T14:59:24.391Z"
       },
       {
-        "id": "17",
+        "id": 17,
         "title": "Implement basic circuit renderer",
         "description": "Render qubit wires, gate boxes, control dots, connections in egui",
         "details": "In ketgrid-gui/src/circuit_view.rs: impl CircuitView { fn ui(&mut self, ui: &mut egui::Ui, circuit: &Circuit) }. Draw horizontal wires, gate rectangles with labels (H,X,Y,Z,⊕), filled ● controls, lines between multi-qubit gates. Grid layout by columns.",
@@ -104,7 +104,7 @@
         "updatedAt": "2026-03-16T15:28:41.770Z"
       },
       {
-        "id": "18",
+        "id": 18,
         "title": "Add probability histogram visualization",
         "description": "Display state vector probabilities as colored bars",
         "details": "In ketgrid-gui/src/state_view.rs: Probability bars for each basis state |00⟩,|01⟩,... Height=probability, color by phase (red=0°, blue=180°). Show percentages. Toggle amplitude table below.",
@@ -121,7 +121,7 @@
         "updatedAt": "2026-03-16T15:35:35.270Z"
       },
       {
-        "id": "19",
+        "id": 19,
         "title": "Implement JSON circuit serialization",
         "description": "Add save/load functionality for native Ket JSON format",
         "details": "In ketgrid-core/src/format/json.rs: impl Serialize/Deserialize for Circuit matching PRD schema. Add Circuit::from_json_file(path), to_json_file(path). Validate ket_version, qubits, gates array.",
@@ -138,7 +138,7 @@
         "updatedAt": "2026-03-16T15:50:25.074Z"
       },
       {
-        "id": "20",
+        "id": 20,
         "title": "Create 5 example circuits",
         "description": "Add Bell, GHZ, Deutsch-Jozsa, teleportation, Grover 2-qubit as .ket.json files",
         "details": "In examples/: bell.ket.json, ghz.ket.json, etc. Each with name, description, correct gates. Load via menu. Verify all simulate correctly.",
@@ -157,7 +157,7 @@
         "updatedAt": "2026-03-16T15:41:55.416Z"
       },
       {
-        "id": "21",
+        "id": 21,
         "title": "Add status bar with metrics",
         "description": "Display qubit count, gate count, memory estimate in bottom bar",
         "details": "In ketgrid-gui/src/app.rs: StatusBar widget showing 'N qubits | M gates | ~KB state vector'. Use max_qubits_for_memory from QuantRS2. Warn at RAM limits.",
@@ -175,7 +175,7 @@
         "updatedAt": "2026-03-16T15:52:37.394Z"
       },
       {
-        "id": "22",
+        "id": 22,
         "title": "Implement gate palette UI",
         "description": "Create side panel with categorized gate buttons",
         "details": "In ketgrid-gui/src/gate_palette.rs: Collapsible sections Basic/Phase/Rotation/Multi-Qubit. Buttons trigger drag mode. Icons/text labels per PRD layout.",
@@ -192,7 +192,7 @@
         "updatedAt": "2026-03-16T16:05:17.296Z"
       },
       {
-        "id": "23",
+        "id": 23,
         "title": "Add drag-and-drop gate placement",
         "description": "Enable dragging gates from palette to qubit wires",
         "details": "In ketgrid-gui/src/editor.rs: Drag state tracking. Drop indicators (wire highlight). Insert PlacedGate at drop column/target. Single-qubit: drop on wire. Multi-qubit: drag first, click second.",
@@ -210,7 +210,7 @@
         "updatedAt": "2026-03-16T16:27:26.025Z"
       },
       {
-        "id": "24",
+        "id": 24,
         "title": "Implement gate context menu",
         "description": "Right-click gates for edit/delete/copy operations",
         "details": "Context menu: Edit parameters (Rx slider), Delete, Copy. Paste at mouse position. Multi-select Ctrl+Click.",
@@ -226,7 +226,7 @@
         "expansionPrompt": "1) Right-click context menus, 2) Edit/delete/copy operations, 3) Multi-select and paste."
       },
       {
-        "id": "25",
+        "id": 25,
         "title": "Add undo/redo system",
         "description": "Operation-based undo stack for all edits",
         "details": "In ketgrid-gui/src/history.rs: EditHistory<T> like Ferrite. Operations: AddGate, RemoveGate, MoveGate, EditParam. Ctrl+Z/Y bindings. Limit stack to 100 ops.",
@@ -242,7 +242,7 @@
         "expansionPrompt": "Break down: 1) Define EditOperation enum, 2) EditHistory stack impl, 3) Operation recording for all edits, 4) Undo/redo dispatch, 5) Key bindings."
       },
       {
-        "id": "26",
+        "id": 26,
         "title": "Implement real-time debounced simulation",
         "description": "Auto-simulate on edits with 100ms debounce",
         "details": "In ketgrid-gui/src/app.rs: tokio::spawn background thread. Debounce edits → simulate → update state_view. Manual sim button for >20 qubits.",
@@ -260,7 +260,7 @@
         "expansionPrompt": "1) Edit event detection, 2) Tokio debounce timer, 3) Background sim thread, 4) Manual sim fallback for large circuits."
       },
       {
-        "id": "27",
+        "id": 27,
         "title": "Add Bloch sphere visualization",
         "description": "2D-projected Bloch sphere per qubit using reduced density matrix",
         "details": "In ketgrid-gui/src/bloch.rs: Painter2d circle + arrow for qubit state. North pole=|0⟩, south=|1⟩, equator=|+⟩. Drag to rotate view. Compute via partial trace.",
@@ -277,7 +277,7 @@
         "expansionPrompt": "1) Reduced density matrix via partial trace, 2) Bloch vector computation, 3) egui Painter2d sphere/arrow, 4) Interactive view rotation."
       },
       {
-        "id": "28",
+        "id": 28,
         "title": "Implement step-through mode",
         "description": "Single-gate stepping with playback controls",
         "details": "In ketgrid-gui/src/app.rs: StepForward, StepBack, Play, Reset buttons. Vertical cursor at current column. State updates per step.",
@@ -294,7 +294,7 @@
         "expansionPrompt": "1) Stepper controls UI, 2) Column-wise gate application, 3) State update and cursor rendering."
       },
       {
-        "id": "29",
+        "id": 29,
         "title": "Add entanglement visualization",
         "description": "Color-code entangled qubit groups",
         "details": "In ketgrid-gui/src/circuit_view.rs: Compute concurrence/entanglement entropy. Assign colors to entanglement clusters post-CNOT.",
@@ -310,7 +310,7 @@
         "expansionPrompt": "1) Concurrence/entanglement entropy calc, 2) Cluster detection algorithm, 3) Color assignment, 4) Rendering integration."
       },
       {
-        "id": "30",
+        "id": 30,
         "title": "Implement circuit statistics panel",
         "description": "Show gate counts, depth, qubit usage, estimates",
         "details": "Panel: total gates by type, circuit depth (max column), qubit count, memory usage, hardware time estimate.",
@@ -326,7 +326,7 @@
         "expansionPrompt": "1) Gate counts/depth/qubit stats, 2) Memory/hardware estimates."
       },
       {
-        "id": "31",
+        "id": 31,
         "title": "Implement OpenQASM 2.0 export",
         "description": "Export circuits to standard OpenQASM format",
         "details": "In ketgrid-core/src/format/qasm.rs: Convert Circuit → OpenQASM2 string. Map gates H→h, X→x, etc. Support qreg, creg, barrier, measure.",
@@ -343,7 +343,7 @@
         "expansionPrompt": "1) Gate mapping to QASM syntax, 2) Header/qreg/creg/barrier generation, 3) String formatting and validation."
       },
       {
-        "id": "32",
+        "id": 32,
         "title": "Implement Qiskit Python export",
         "description": "Generate importable Qiskit QuantumCircuit code",
         "details": "ketgrid-core/src/format/qiskit.rs: 'qc = QuantumCircuit(nqubits); qc.h(0); qc.cx(0,1)' format. Handle all supported gates.",
@@ -359,7 +359,7 @@
         "expansionPrompt": "1) Qiskit QuantumCircuit code generation, 2) Gate mapping and parameter handling."
       },
       {
-        "id": "33",
+        "id": 33,
         "title": "Add OpenQASM import",
         "description": "Parse OpenQASM 2.0 files into Circuit",
         "details": "nom parser for qreg, gate, measure, barrier. Map qiskit gates to Ket GateType.",
@@ -376,7 +376,7 @@
         "expansionPrompt": "1) Nom parser for QASM grammar, 2) qreg/gate/measure handling, 3) GateType mapping, 4) Error recovery, 5) Roundtrip testing."
       },
       {
-        "id": "34",
+        "id": 34,
         "title": "Implement SVG circuit export",
         "description": "Vector export of rendered circuit diagram",
         "details": "Reuse circuit_view painter paths → SVG paths. Scale to fit A4 page.",
@@ -392,7 +392,7 @@
         "expansionPrompt": "1) Capture egui painter paths, 2) Convert to SVG paths, 3) A4 scaling and export."
       },
       {
-        "id": "35",
+        "id": 35,
         "title": "Create example library browser",
         "description": "UI for browsing/loading 15+ categorized examples",
         "details": "ketgrid-gui/src/examples.rs: Categories Fundamentals/Algorithms/Error-Correction. Search bar. Thumbnails/previews.",
@@ -408,7 +408,7 @@
         "expansionPrompt": "1) UI categories/search, 2) Example loading, 3) Thumbnails/previews generation."
       },
       {
-        "id": "36",
+        "id": 36,
         "title": "Add keyboard shortcuts",
         "description": "Delete, Ctrl+Z/Y, Ctrl+C/V, wire management hotkeys",
         "details": "egui::KeyboardShortcuts: Delete→remove selected, Ctrl+Z→undo, etc. Wire +/- buttons.",
@@ -424,7 +424,7 @@
         "expansionPrompt": "1) Core shortcuts (undo/delete/copy), 2) Wire management hotkeys."
       },
       {
-        "id": "37",
+        "id": 37,
         "title": "Research cuStateVec Rust bindings feasibility and create decision matrix",
         "description": "Investigate the feasibility of integrating NVIDIA's cuStateVec library into the Ket quantum simulator via Rust CUDA bindings, assess build requirements on Windows, and compare performance/complexity against pure Rust alternatives like QCGPU with OpenCL.",
         "details": "Conduct a comprehensive feasibility study with the following components:\n\n1. **cuStateVec Function Accessibility from Rust**: Review NVIDIA's cuStateVec C API (state vector initialization, gate application, measurement operations, accessor functions) and determine how to wrap these functions using Rust CUDA bindings. Investigate using the `cust` crate (which provides `cust_raw` bindings) or `rustacuda` to call cuStateVec functions. Document the binding generation process using `bindgen` for automatic C header conversion, following the pattern used in Rust-CUDA for cuDNN, cuBLAS, and other NVIDIA libraries.\n\n2. **Windows Build and Dependency Requirements**: Analyze the specific challenges for Windows integration including: CUDA Toolkit installation paths, cuStateVec library location (typically in CUDA installation), header file dependencies (library_types.h and other CUDA headers), linker configuration, and CMake/Cargo integration. Document required environment variables, Visual Studio toolchain compatibility, and potential issues with dynamic library loading (.dll vs .so). Reference the GitHub discussion about CMake integration challenges and custom FindCuQuantum.cmake scripts as a model for dependency resolution.\n\n3. **Performance vs. Complexity Analysis**: Create a comparison matrix evaluating: (a) cuStateVec approach - GPU acceleration benefits, memory bandwidth advantages, NVIDIA optimization, but increased complexity in Rust FFI, Windows build fragility, and dependency management; (b) Pure Rust solutions (QCGPU with OpenCL) - simpler build process, cross-platform compatibility, no external C library dependencies, but potentially lower performance for large state vectors. Quantify estimated performance gains for 20+ qubit simulations.\n\n4. **Integration Points**: Identify where cuStateVec would integrate into the existing ketgrid-sim crate (Task 16 uses QuantRS2; cuStateVec could be an optional feature flag). Document the API surface needed: state vector creation, gate application (single and multi-qubit), measurement, and state vector export for visualization.\n\n5. **Deliverable**: Produce a structured research report including: (a) technical feasibility assessment with code examples showing cuStateVec function wrapping in Rust, (b) Windows build procedure with dependency checklist, (c) performance comparison table (simulation time, memory usage, startup overhead), (d) risk assessment (maintenance burden, NVIDIA API stability, Windows-specific issues), and (e) final recommendation with decision matrix scoring each approach on performance, maintainability, cross-platform support, and integration effort.",
@@ -437,7 +437,7 @@
         "subtasks": []
       },
       {
-        "id": "38",
+        "id": 38,
         "title": "Design GPU simulation trait interface",
         "description": "Create abstract QuantumSimulator trait that both CPU and GPU implementations can satisfy, with methods for initialization, gate application, state vector retrieval, and measurement operations.",
         "details": "In ketgrid-sim/src/traits.rs, define a QuantumSimulator trait with the following methods: new(nqubits: usize) -> Self for initialization, apply_gate(gate: &GateType, targets: &[usize]) for applying quantum gates, get_state_vector() -> Vec<Complex<f64>> for retrieving the full state vector, measure(qubit: usize) -> bool for measuring individual qubits, and reset() for clearing state. The trait should use associated types or generic parameters to support both CPU (using QuantRS2 StateVectorSimulator from Task 16) and GPU backends. Include a BackendSelector enum or factory function that determines at runtime whether to use CPU or GPU based on: (1) qubit count threshold (e.g., GPU for >12 qubits), (2) GPU availability detection via CUDA/cuStateVec presence, and (3) user preference. Design the trait to be object-safe where possible to allow trait objects (dyn QuantumSimulator) for heterogeneous collections. Document trait bounds, lifetime parameters, and error handling (e.g., Result<T, SimulationError>). Consider blanket implementations for references (&T, &mut T, Box<T>) following Rust best practices shown in search results. Include placeholder GPU trait (GPUSimulator) with cuda/cuStateVec feature flags for future implementation. Ensure the trait integrates with existing Circuit and GateType from Tasks 13 and 15.",
@@ -452,7 +452,7 @@
         "subtasks": []
       },
       {
-        "id": "39",
+        "id": 39,
         "title": "Implement CUDA state vector kernels for quantum gate operations",
         "description": "Write optimized CUDA kernels for core quantum operations (apply_single_qubit_gate, apply_controlled_gate, apply_swap) targeting state vectors up to 24GB with gate fusion optimization, and create Rust-CUDA interop bindings.",
         "details": "Implement three main CUDA kernel functions in ketgrid-sim/src/gpu/kernels.cu: (1) apply_single_qubit_gate: takes a 2x2 unitary matrix and applies it to a single qubit in the state vector, using GPU parallelism to process all 2^(n-1) affected amplitudes concurrently[1]; (2) apply_controlled_gate: implements controlled operations (CNOT, CZ) by applying conditional unitary transformations based on control qubit states; (3) apply_swap: efficiently swaps two qubits' positions in the state vector representation. Each kernel should leverage GPU thread blocks to handle the exponential state space—for 28-29 qubits on RTX 3090 (24GB VRAM), allocate state vectors as device memory and use coalesced memory access patterns[2]. Implement gate fusion optimization by detecting adjacent single-qubit gates on the same qubit and composing their unitary matrices before kernel launch, reducing memory bandwidth and kernel launch overhead. In ketgrid-sim/src/gpu/cuda_backend.rs, create Rust bindings using the cust crate: define extern \"C\" function signatures matching the CUDA kernels, implement a CudaBackend struct that manages device memory allocation/deallocation, and provide methods apply_single_qubit_gate_gpu(), apply_controlled_gate_gpu(), apply_swap_gpu() that marshal Rust data to GPU and invoke kernels[7]. Use cust's DeviceBuffer for state vector storage and CopyableTypeDevice trait for complex number types. Include error handling for CUDA operations (memory allocation failures, kernel launch errors) with fallback to CPU simulation. Precompute common gate matrices (H, X, Y, Z, S, T) as device constants to avoid repeated host-to-device transfers. Document memory layout assumptions (row-major state vector indexing) and qubit ordering conventions.",
@@ -468,7 +468,7 @@
         "subtasks": []
       },
       {
-        "id": "40",
+        "id": 40,
         "title": "Add GPU memory management with VRAM tracking and circuit chunking",
         "description": "Implement VRAM tracking, estimation, and graceful out-of-memory handling for CUDA backend with circuit chunking and memory pool allocation for efficient GPU memory utilization.",
         "details": "Create ketgrid-sim/src/gpu/memory.rs with the following components:\n\n1. **VRAM Estimation Function**: Implement `estimate_vram_usage(nqubits: usize) -> u64` that calculates memory requirements for state vectors. For n qubits, a state vector requires 2^n complex numbers (16 bytes each), so estimate = 16 * 2^n bytes. Add overhead for intermediate buffers (typically 2-3x the state vector size for gate operations and temporary storage).\n\n2. **VRAM Availability Check**: Implement `check_vram_available(required_bytes: u64) -> Result<(), OutOfMemoryError>` using CUDA's `cudaMemGetInfo()` to query free and total device memory. Return error if required bytes exceed available VRAM with a safety margin (e.g., reserve 10% for driver overhead).\n\n3. **Graceful OOM Handling**: Implement `handle_oom_gracefully(circuit: &Circuit, available_vram: u64) -> Result<ChunkedCircuit, Error>` that detects when a circuit exceeds available VRAM and automatically chunks it into smaller sub-circuits that fit in memory. Use a greedy algorithm to group consecutive gates into chunks, respecting qubit dependencies.\n\n4. **Circuit Chunking**: Implement `ChunkedCircuit` struct containing Vec<CircuitChunk> where each chunk is small enough to fit in VRAM. Add `execute_chunked(chunked: &ChunkedCircuit) -> StateVector` that: (a) executes first chunk on GPU, (b) transfers intermediate state vector to host RAM, (c) executes next chunk, (d) swaps results between GPU and host as needed. Use CUDA streams (via `cust` crate) to overlap transfers with computation where possible[1].\n\n5. **Memory Pool Allocator**: Implement a `MemoryPool` struct that pre-allocates fixed-size GPU memory blocks for frequent small allocations (e.g., parameter buffers, intermediate results). Use a free-list allocator pattern to avoid repeated cudaMalloc/cudaFree calls. Provide `allocate(size: usize) -> DeviceBuffer` and `deallocate(buffer: DeviceBuffer)` methods.\n\n6. **Integration with QuantumSimulator trait**: Add optional `memory_config: MemoryConfig` parameter to GPU backend initialization, allowing users to set max_vram_usage, enable_chunking, and pool_size. Ensure memory operations are transparent to the trait interface defined in Task 38.\n\n7. **Safety Considerations**: Use Rust's type system to ensure GPU memory is properly freed. Implement `Drop` for all GPU-allocated types. Use `#[repr(C)]` for data structures passed to CUDA kernels to ensure correct memory layout[1]. Leverage CUDA's unified memory where appropriate to simplify host-device synchronization, but document performance implications.",
@@ -485,7 +485,7 @@
         "subtasks": []
       },
       {
-        "id": "41",
+        "id": 41,
         "title": "Implement hybrid CPU/GPU scheduling with automatic backend selection",
         "description": "Create a scheduling system that automatically selects between CPU and GPU backends based on qubit count, with manual override capability and seamless state vector transfer between backends.",
         "details": "Implement a backend scheduler in ketgrid-sim/src/scheduler.rs that intelligently routes quantum simulations to optimal hardware. The scheduler should: (1) Analyze circuit qubit count at runtime and auto-select backend: CPU for ≤15 qubits (lower latency, eliminates state vector transfer overhead), GPU for 16-29 qubits (exploits parallel speedup for larger state spaces), and warn/block at 30+ qubits (exceeds typical VRAM capacity of 24GB)[1][2]. (2) Implement a QuantumSimulator trait (from Task 38) that both CPU and GPU backends satisfy, allowing transparent backend switching[1][4]. (3) Add state vector transfer logic: when user manually switches backends via UI toggle, serialize the current state vector from source backend and deserialize into target backend with zero-loss precision. Use nalgebra Complex<f64> types for consistency[1]. (4) Create BackendSelector struct with methods: select_backend(qubit_count: usize) -> BackendType, can_transfer_state(from: BackendType, to: BackendType) -> bool, transfer_state_vector(state: Vec<Complex<f64>>, from: BackendType, to: BackendType) -> Result. (5) Integrate with ketgrid-gui/src/app.rs: add UI toggle button labeled 'Manual Backend Override' that appears when qubit count is 16-29 (the ambiguous range). Display current backend and estimated VRAM usage. Show warning dialog at 30+ qubits with option to proceed (chunking) or cancel[2]. (6) Log backend selection decisions and transfer operations for debugging. Consider latency: research shows GPU-accelerated diagonalization can achieve 40-95x speedups for compute-intensive steps, but transfer overhead matters for tightly-coupled algorithms[2]. For ≤15 qubits, CPU avoids this overhead entirely[1]. (7) Handle edge cases: circuit modification mid-execution (recompute backend), failed transfers (fallback to original backend), and memory pressure (graceful degradation).",
@@ -501,16 +501,49 @@
         ],
         "priority": "low",
         "subtasks": []
+      },
+      {
+        "id": 42,
+        "title": "Evaluate quantum kernel emulator approach post-v1.0",
+        "description": "Assess the performance, scalability, and architectural viability of the quantum kernel emulator implementation after v1.0 release, comparing CPU and GPU backends against industry benchmarks and identifying optimization opportunities for future releases.",
+        "details": "Conduct a comprehensive post-release evaluation of the quantum kernel emulator (ketgrid-sim) by: (1) Benchmarking Performance: Run standardized quantum circuits (Bell states, GHZ states, Grover's algorithm, Deutsch-Jozsa) on both CPU (QuantRS2 StateVectorSimulator) and GPU (CUDA kernels) backends across varying qubit counts (5, 10, 15, 20, 25 qubits). Compare execution times, memory usage, and throughput against published benchmarks from QCGPU-Rust[1] (which reports GPU times of 103-108ms for 25-qubit single gate operations) and Spinoza[4] (a Rust-based quantum simulator). Document speedup ratios and identify performance cliffs. (2) Scalability Analysis: Test maximum qubit counts achievable on target hardware (typical GPU VRAM: 24GB). Verify VRAM tracking from Task 40 accurately predicts out-of-memory conditions. Measure state vector transfer overhead between CPU/GPU backends (Task 41). (3) Architecture Review: Evaluate the QuantumSimulator trait design (Task 38) for extensibility. Assess whether the hybrid scheduling logic (Task 41) correctly routes circuits to optimal backends. Review gate fusion optimization effectiveness in CUDA kernels (Task 39). (4) Comparison with Alternatives: Benchmark against QCGPU-Rust (OpenCL-based, cross-platform)[1], Spinoza (Rust state-vector simulator with SIMD optimization)[4], and quantum-emulator (Rust+Python hybrid)[3]. Document trade-offs in performance, maintainability, and platform support. (5) Identify Optimization Opportunities: Analyze profiling data to pinpoint bottlenecks (memory bandwidth, kernel launch overhead, state vector transfer latency). Propose post-v1.0 improvements such as advanced gate fusion, tensor network contraction for specific circuit patterns, or integration with cuStateVec[2] if feasible. (6) Documentation: Create a detailed evaluation report including benchmark results, architectural assessment, competitive analysis, and prioritized recommendations for v1.1+.",
+        "testStrategy": "(1) Benchmark Validation: Execute standardized quantum circuits on both backends, capture execution times and memory profiles using Rust's criterion.rs benchmarking framework. Verify GPU backend achieves ≥2x speedup over CPU for 20+ qubit circuits; verify CPU backend has <5ms latency for ≤15 qubit circuits. (2) Scalability Testing: Progressively increase qubit counts until out-of-memory errors occur; verify VRAM tracking (Task 40) predicts failure within 10% accuracy. Measure CPU↔GPU state vector transfer time for 20-qubit circuits; confirm <50ms overhead. (3) Architecture Validation: Instantiate QuantumSimulator trait with both CPU and GPU implementations; verify all trait methods execute correctly. Test BackendSelector logic (Task 41) with circuits of 5, 15, 16, 29 qubits; confirm correct backend selection. (4) Comparative Analysis: Run identical circuits on QCGPU-Rust, Spinoza, and ketgrid-sim; compare execution times and verify numerical results match within floating-point precision (1e-10). Document performance ratios. (5) Profiling Analysis: Use NVIDIA Nsight or Linux perf to identify top 3 performance bottlenecks in GPU kernels and CPU state vector operations. Verify proposed optimizations reduce identified bottlenecks by ≥20%. (6) Report Completeness: Deliver evaluation report with ≥5 benchmark graphs, architectural assessment checklist, competitive comparison table, and ≥3 prioritized recommendations with estimated implementation effort.",
+        "status": "pending",
+        "dependencies": [
+          16,
+          38,
+          39,
+          40,
+          41
+        ],
+        "priority": "low",
+        "subtasks": []
+      },
+      {
+        "id": 43,
+        "title": "Reconsider simulation approach: quantum kernel emulator vs state vector",
+        "description": "After v1.0.0 completion, evaluate evolving from state vector simulation to a full quantum kernel emulator that explicitly models 1-to-n qubit relationships and probabilistic measurement collapse.",
+        "details": "Decision point: After all Phase 4 deliverables are complete (v1.0.0), conduct a thorough evaluation of whether to evolve the simulation approach from state vector to a more faithful 'quantum kernel emulator' that explicitly models:\n\n1. **1-to-n qubit relationships** — Visual representation of how single operations affect the entire quantum register, rather than just applying matrices to amplitudes\n2. **Probabilistic values that collapse on observation** — Measurement as a distinct, visible event where superposition collapses to definite states, making quantum weirdness visceral\n3. **True entanglement simulation** — When one qubit is measured, correlated qubits instantly reflect the collapsed state, demonstrating non-local quantum effects\n\nCompare approaches:\n- **State vector pros**: Mathematically correct, fast (matrix operations), well-understood, easy to validate\n- **State vector cons**: Abstract, doesn't show 'why' quantum is different from classical, measurement is just reading amplitudes\n- **Kernel emulator pros**: Makes quantum phenomena visceral and educational, potentially unique differentiation (no competitor does this), better for learning\n- **Kernel emulator cons**: Much more complex to implement, harder to validate correctness, performance implications\n\nResearch existing quantum kernel emulators and simulators that take this approach. Determine if the educational value justifies the complexity. If pursuing, outline implementation plan with estimated scope. If not, document rationale and close task.",
+        "testStrategy": "(1) Research existing 'quantum kernel' or 'quantum computer emulator' implementations that model 1-to-n qubit relationships; document at least 2-3 examples if they exist, or confirm this would be novel. (2) Write prototype spike comparing state vector vs kernel approach for a 2-qubit Bell state: implement both, compare code complexity, performance, and visual output. (3) Decision document: Produce 1-page analysis with recommendation (proceed or not), estimated implementation effort, and key risks. (4) If proceeding, create follow-up tasks with scope breakdown.",
+        "status": "pending",
+        "dependencies": [
+          42
+        ],
+        "priority": "low",
+        "subtasks": []
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-16T16:27:26.025Z",
-      "taskCount": 30,
+      "lastModified": "2026-03-16T17:27:00.000Z",
+      "taskCount": 31,
       "completedCount": 12,
       "tags": [
         "master"
-      ]
+      ],
+      "created": "2026-03-16T17:13:21.538Z",
+      "description": "Tasks for master context",
+      "updated": "2026-03-16T17:27:00.000Z"
     }
   }
 }
