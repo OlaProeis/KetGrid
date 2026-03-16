@@ -1,0 +1,40 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS specific
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Cursor IDE (local MCP config, not project rules)
+.cursor/mcp.json
+
+# Taskmaster local state (not task data)
+.taskmaster/state.json
+
+# Node (taskmaster CLI)
+node_modules/
+npm-debug.log*
+
+# Internal AI session context
+current-handover-prompt.md
+update-handover-prompt.md
+
+# Cargo lock is committed for binary crates (ketgrid-gui)
+# but uncomment this line if publishing ketgrid-core as a library:
+# Cargo.lock

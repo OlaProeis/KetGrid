@@ -1,0 +1,16 @@
+{
+  "ket_version": "0.1.0",
+  "name": "GHZ State",
+  "description": "Creates a 3-qubit Greenberger-Horne-Zeilinger state (|000⟩ + |111⟩)/√2. Demonstrates multipartite entanglement beyond Bell pairs.",
+  "qubits": 3,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 1 },
+    { "type": "CNOT", "controls": [1], "targets": [2], "column": 2 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 3 },
+    { "qubit": 1, "column": 3 },
+    { "qubit": 2, "column": 3 }
+  ]
+}

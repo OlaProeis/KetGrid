@@ -1,0 +1,14 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Bell State",
+  "description": "Creates an entangled Bell state |Φ+⟩ = (|00⟩ + |11⟩)/√2. The simplest quantum entanglement demonstrating non-local correlations.",
+  "qubits": 2,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 1 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 2 },
+    { "qubit": 1, "column": 2 }
+  ]
+}

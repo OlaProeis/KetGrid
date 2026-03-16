@@ -1,0 +1,16 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Deutsch-Jozsa Algorithm",
+  "description": "Determines if a function f: {0,1} → {0,1} is constant or balanced in a single query. Classical computers need up to 2 queries. This example uses f(x) = x (balanced).",
+  "qubits": 2,
+  "gates": [
+    { "type": "X", "targets": [1], "column": 0 },
+    { "type": "H", "targets": [0], "column": 1 },
+    { "type": "H", "targets": [1], "column": 1 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 2 },
+    { "type": "H", "targets": [0], "column": 3 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 4 }
+  ]
+}

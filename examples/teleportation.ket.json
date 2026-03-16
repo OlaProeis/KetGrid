@@ -1,0 +1,18 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Quantum Teleportation",
+  "description": "Transfers an arbitrary quantum state from Alice (q0) to Bob (q2) using shared entanglement and classical communication. Demonstrates that quantum information can be transmitted using only classical bits and pre-shared entanglement.",
+  "qubits": 3,
+  "gates": [
+    { "type": "H", "targets": [1], "column": 0 },
+    { "type": "CNOT", "controls": [1], "targets": [2], "column": 1 },
+    { "type": "Barrier", "targets": [0], "column": 2 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 3 },
+    { "type": "H", "targets": [0], "column": 4 },
+    { "type": "Barrier", "targets": [0], "column": 5 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 6 },
+    { "qubit": 1, "column": 6 }
+  ]
+}

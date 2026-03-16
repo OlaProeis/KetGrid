@@ -1,0 +1,26 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Grover's Algorithm (2-Qubit)",
+  "description": "Searches for a marked item in an unsorted database of 4 items using amplitude amplification. This example marks state |11⟩ using CZ as the phase oracle. Grover's algorithm provides quadratic speedup over classical search.",
+  "qubits": 2,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "H", "targets": [1], "column": 0 },
+    { "type": "Barrier", "targets": [0], "column": 1 },
+    { "type": "CZ", "controls": [0], "targets": [1], "column": 2 },
+    { "type": "Barrier", "targets": [0], "column": 3 },
+    { "type": "H", "targets": [0], "column": 4 },
+    { "type": "H", "targets": [1], "column": 4 },
+    { "type": "X", "targets": [0], "column": 5 },
+    { "type": "X", "targets": [1], "column": 5 },
+    { "type": "CZ", "controls": [0], "targets": [1], "column": 6 },
+    { "type": "X", "targets": [0], "column": 7 },
+    { "type": "X", "targets": [1], "column": 7 },
+    { "type": "H", "targets": [0], "column": 8 },
+    { "type": "H", "targets": [1], "column": 8 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 9 },
+    { "qubit": 1, "column": 9 }
+  ]
+}
