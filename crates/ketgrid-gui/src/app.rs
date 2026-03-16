@@ -79,6 +79,10 @@ pub struct KetGridApp {
     state_view: StateView,
     /// Editor state for drag-and-drop gate placement.
     editor_state: EditorState,
+    /// Path to the currently open file (for Save vs Save As).
+    current_file_path: Option<std::path::PathBuf>,
+    /// Status message for file operations.
+    file_status: Option<String>,
 }
 
 impl KetGridApp {
@@ -102,6 +106,81 @@ impl KetGridApp {
             circuit_view: CircuitView::default(),
             state_view: StateView::default(),
             editor_state: EditorState::default(),
+            current_file_path: None,
+            file_status: None,
+        }
+    }
+
+    /// Show file open dialog and load the selected circuit.
+    fn open_file_dialog(&mut self) {
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("KetGrid Circuit", &["ket.json"])
+            .add_filter("All Files", &["*"])
+            .set_directory(std::env::current_dir().unwrap_or_default())
+            .pick_file()
+        {
+            match Circuit::from_json_file(&path) {
+                Ok(loaded_circuit) => {
+                    self.circuit = loaded_circuit;
+                    self.current_file_path = Some(path.clone());
+                    self.editor_state.cancel_pending();
+                    self.gate_palette.clear_selection();
+                    self.editor_state.clear_selection();
+                    self.refresh_simulation();
+                    self.file_status =
+                        Some(format!("Loaded: {}", path.file_stem().unwrap_or_default().to_string_lossy()));
+                }
+                Err(e) => {
+                    self.file_status = Some(format!("Error loading: {}", e));
+                }
+            }
+        }
+    }
+
+    /// Save the current circuit to file.
+    fn save_file_dialog(&mut self) {
+        if let Some(ref path) = self.current_file_path {
+            // Save to existing file
+            if let Err(e) = self.circuit.to_json_file(path) {
+                self.file_status = Some(format!("Error saving: {}", e));
+            } else {
+                self.file_status =
+                    Some(format!("Saved: {}", path.file_stem().unwrap_or_default().to_string_lossy()));
+            }
+        } else {
+            // No existing file, show save dialog
+            self.save_as_file_dialog();
+        }
+    }
+
+    /// Show save as dialog and save the circuit.
+    fn save_as_file_dialog(&mut self) {
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("KetGrid Circuit", &["ket.json"])
+            .add_filter("All Files", &["*"])
+            .set_directory(std::env::current_dir().unwrap_or_default())
+            .set_file_name("circuit.ket.json")
+            .save_file()
+        {
+            // Ensure the file has the correct extension
+            let path_with_ext = if path.extension().is_none() {
+                path.with_extension("ket.json")
+            } else {
+                path
+            };
+
+            match self.circuit.to_json_file(&path_with_ext) {
+                Ok(()) => {
+                    self.current_file_path = Some(path_with_ext.clone());
+                    self.file_status = Some(format!(
+                        "Saved: {}",
+                        path_with_ext.file_stem().unwrap_or_default().to_string_lossy()
+                    ));
+                }
+                Err(e) => {
+                    self.file_status = Some(format!("Error saving: {}", e));
+                }
+            }
         }
     }
 
@@ -401,17 +480,24 @@ impl eframe::App for KetGridApp {
                 ui.menu_button("File", |ui| {
                     if ui.button("New Circuit").clicked() {
                         self.circuit = Circuit::new(3);
+                        self.current_file_path = None;
                         self.editor_state.cancel_pending();
                         self.gate_palette.clear_selection();
+                        self.editor_state.clear_selection();
                         self.refresh_simulation();
+                        self.file_status = Some("New circuit created".to_string());
                         ui.close_menu();
                     }
                     if ui.button("Open…").clicked() {
-                        // TODO: File dialog
+                        self.open_file_dialog();
                         ui.close_menu();
                     }
                     if ui.button("Save").clicked() {
-                        // TODO: Save circuit
+                        self.save_file_dialog();
+                        ui.close_menu();
+                    }
+                    if ui.button("Save As…").clicked() {
+                        self.save_as_file_dialog();
                         ui.close_menu();
                     }
                     ui.separator();
@@ -652,6 +738,12 @@ impl eframe::App for KetGridApp {
                     ui.colored_label(color, format!("! {}", memory_text));
                 } else {
                     ui.label(memory_text);
+                }
+
+                // Display file status if present
+                if let Some(ref file_status) = self.file_status {
+                    ui.separator();
+                    ui.colored_label(egui::Color32::from_rgb(100, 200, 100), file_status);
                 }
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

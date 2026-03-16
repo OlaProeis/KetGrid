@@ -10,6 +10,8 @@ KetGrid lets you visually build quantum circuits with drag-and-drop, simulate th
 
 ---
 
+![KetGrid Screenshot](assets/screenshot.png)
+
 ## Why KetGrid?
 
 Every existing quantum circuit tool is either a static Python plot, a web app, or a terminal UI. KetGrid is the first **native GUI** approach:
