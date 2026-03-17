@@ -68,7 +68,13 @@ Every existing quantum circuit tool is either a static Python plot, a web app, o
 
 ### Future Directions
 
-See the full [Roadmap](ROADMAP.md) for details on planned features including GPU acceleration, noise simulation, parameterized circuits, and a potential **quantum kernel emulator** approach.
+See the full [Roadmap](ROADMAP.md) for detailed technical plans. The three major post-v0.1.0 workstreams are:
+
+1. **GPU Acceleration via wgpu** — Push from ~14 qubits to 25+ using wgpu compute shaders with cross-platform support (Windows DX12, macOS Metal, Linux Vulkan)
+2. **Quantum Phenomena Visualization** — Visceral animations showing amplitude flow, measurement collapse, and entanglement propagation in real-time
+3. **True Quantum Emulator** — Shots-based simulation, Black Box mode, correlation discovery, and interactive Bell inequality experiments
+
+Additional planned features include noise simulation, parameterized circuits with sliders, custom gate definitions, tutorial mode, and a WASM web target.
 
 ## Download
 

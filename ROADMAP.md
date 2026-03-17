@@ -59,52 +59,122 @@ KetGrid development follows a phased approach. This document tracks what's been 
 
 ---
 
-## Phase 5: Advanced Features (Post-1.0)
+## Phase 5: Post-v0.1.0 Major Workstreams
 
-*Planned for future releases.*
+Three complementary workstreams have been defined for post-v0.1.0 development. These can proceed in parallel by separate contributors.
 
-- [ ] **Performance optimization** — rayon parallelism tuning, gate fusion improvements, SIMD via nalgebra
+### Workstream A: GPU Acceleration via wgpu Compute Shaders
+
+Push the simulation ceiling from ~14 qubits to 25+ qubits by offloading state vector operations to the GPU.
+
+**Why wgpu (not CUDA):** Cross-platform (Vulkan, DX12, Metal, WebGPU), mature Rust ecosystem, already linked via eframe, pure Cargo build, and enables future WASM target.
+
+- [ ] **Task 37** — Research wgpu compute shader feasibility (f32 precision analysis)
+- [ ] **Task 38** — Design `QuantumSimulator` trait with CPU + GPU implementations
+- [ ] **Task 39** — Implement wgpu state vector shaders (single-qubit, controlled, swap gates)
+- [ ] **Task 40** — GPU memory management (VRAM estimation, chunking, buffer pools)
+- [ ] **Task 41** — Hybrid CPU/GPU scheduling (auto-select: CPU ≤12 qubits, GPU 13+)
+- [ ] **Task 42** — Post-implementation benchmarking and cross-platform validation
+
+**Key technical risk:** WGSL uses f32; acceptable for circuits up to ~20 qubits with <1e-5 relative error.
+
+**Expected gains:** 20 qubits: 500ms → 10ms; 25 qubits: 30s → 200ms.
+
+### Workstream B: Quantum Phenomena Visualization
+
+Make quantum mechanics visceral by visualizing *how* and *why* states transform — not just the final numbers. A presentation layer on top of the existing CPU simulator (can start immediately).
+
+- [ ] **Task 43.1** — Amplitude Flow Engine: compute significant amplitude transfers between basis states
+- [ ] **Task 43.2** — Amplitude Flow Renderer: animated Sankey-like diagrams with phase-colored flows
+- [ ] **Task 43.3** — Measurement Collapse Animation: probability wheel, state renormalization visualization
+- [ ] **Task 43.4** — Entanglement Propagation: animate partner qubits snapping to correlated states
+- [ ] **Task 43.5** — Quantum Playground Mode: combined visualization for ≤6 qubit circuits
+
+**Novelty:** No existing tool combines amplitude flow, animated measurement collapse, and entanglement propagation.
+
+### Workstream C: True Quantum Emulator (Shots, Black Box, Bell Test)
+
+Model the experience of interacting with real quantum hardware — you never see the state vector, only measurement outcomes.
+
+- [ ] **Task 45** — Shots-based statistical simulation: animated histogram building, convergence metrics
+- [ ] **Task 46** — Black Box / Measurement-Only Mode: hide state vector, "?" Bloch spheres, "Peek" button
+- [ ] **Task 47** — Correlation Discovery Dashboard: correlation matrix, scatter plots, live annotations
+- [ ] **Task 48** — Interactive Bell Test / CHSH Violation: run Bell experiments, watch S-value cross classical limit |S|=2
+
+**Why this matters:** The Bell inequality violation is the foundational proof of quantum mechanics. No existing tool lets you run it interactively.
+
+---
+
+### Future Considerations (Beyond Current Workstreams)
+
 - [ ] **Noise simulation** — depolarizing, amplitude/phase damping models; ideal vs noisy comparison
 - [ ] **Parameterized circuits** — slider-controlled rotation gates with parameter sweep plots
 - [ ] **Custom gate definitions** — define gates as sub-circuits, gate decomposition view
 - [ ] **Tutorial mode** — guided interactive lessons, challenges ("Build a circuit that produces |Φ+⟩")
-- [ ] **GPU acceleration** — CUDA state vector simulation for large circuits (20+ qubits)
-  - Trait-based backend abstraction (CPU/GPU)
-  - CUDA kernels for gate operations
-  - VRAM management and circuit chunking
-  - Hybrid CPU/GPU scheduling with automatic backend selection
-- [ ] **WASM target** — web version via egui's WASM support
+- [ ] **WASM target** — web version via egui's WASM support (enabled by wgpu compute shaders)
 
-### Future Consideration: Quantum Kernel Emulator
+### Relationship Between Workstreams
 
-After v1.0.0, evaluate evolving from state vector simulation to a full **quantum kernel emulator** that explicitly models:
-
-- **1-to-n qubit relationships** — visual representation of how single operations affect the entire quantum register
-- **Probabilistic values that collapse on observation** — measurement as a distinct, visible event rather than just reading amplitudes
-- **True entanglement simulation** — when one qubit is measured, correlated qubits instantly reflect the collapsed state
-
-This approach could make quantum phenomena more visceral and educational, potentially differentiating KetGrid from all existing circuit tools.
+```
+         ketgrid-sim                    ketgrid-gui
+    ┌─────────────────┐           ┌──────────────────────────┐
+    │ QuantumSimulator│           │   Existing UI            │
+    │     trait (38)   │           │   Step-through (28)      │
+    │         │        │           │   Entanglement (29)      │
+    │    ┌────┴────┐   │           │         │                 │
+    │  CPU sim   wgpu  │           │   ┌─────┴──────┐         │
+    │  (existing) sim  │           │   │ Quantum     │         │
+    │            (39)  │           │   │ Phenomena   │         │
+    │              │   │           │   │ Viz (43)    │         │
+    │         Memory   │           │   └────────────┘         │
+    │         mgmt(40) │           │                          │
+    │              │   │           │   ┌──────────────────┐   │
+    │         Scheduler│           │   │ True Emulator    │   │
+    │           (41)   │           │   │ Shots (45)       │   │
+    │              │   │  ┌────────┤   │ Black Box (46)   │   │
+    │  ShotAccum.  │   │  │        │   │ Correlations(47) │   │
+    │  Correlation │◄──┼──┘        │   │ Bell Test (48)   │   │
+    │   (45, 47)   │   │           │   └──────────────────┘   │
+    └─────────────────┘           └──────────────────────────┘
+       Workstream A                  Workstreams B + C
+```
 
 ---
 
 ## Version Milestones
 
-### v0.1.0 — MVP ✅ (Released)
+### v0.1.0 — MVP ✅ (Released 2026-03-17)
 - Visually build quantum circuits via drag-and-drop
 - Real-time simulation results with Bloch sphere and step-through
 - Save/load circuits as JSON, export to OpenQASM/Qiskit/SVG
 - 21 example circuits with browsable library
 - Cross-platform release builds (Windows, macOS, Linux)
 
-### v0.5.0 — Performance & Polish
-- Simulation performance optimization (target: <100ms for 15 qubits)
-- Noise simulation
-- Parameterized circuit UI with sliders
+### v0.2.0 — Quantum Phenomena Visualization & True Emulator
+- Amplitude flow visualization (Sankey-like animated diagrams)
+- Measurement collapse animations with probability wheels
+- Entanglement propagation visualization
+- Quantum Playground mode for ≤6 qubit circuits
+- Shots-based statistical simulation with animated histograms
+- Black Box / Measurement-Only mode (state vector hidden)
+- Correlation discovery dashboard with heatmaps
+- Interactive Bell Test / CHSH violation experiments
+
+### v0.3.0 — GPU Acceleration
+- wgpu compute shader backend for state vector simulation
+- Hybrid CPU/GPU scheduling (auto-select optimal backend)
+- 25+ qubit simulation support (target: <200ms for 25 qubits)
+- Cross-platform GPU support (Vulkan/DX12/Metal)
+
+### v0.4.0 — Performance & Polish
+- Simulation performance optimization (target: <100ms for 20 qubits)
+- Noise simulation (depolarizing, amplitude/phase damping)
+- Parameterized circuit UI with live sliders
 
 ### v1.0.0 — Full Platform
-- GPU acceleration for large circuits
-- Custom gate definitions
-- Tutorial mode
+- Custom gate definitions and decomposition view
+- Tutorial mode with guided challenges
+- WASM web target via WebGPU
 - Stable `ketgrid-core` API, published on crates.io
 
 ---
