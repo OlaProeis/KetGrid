@@ -10,7 +10,7 @@ KetGrid lets you visually build quantum circuits with drag-and-drop, simulate th
 
 ---
 
-![KetGrid Screenshot](assets/screenshot.png)
+![KetGrid Demo](assets/demo.gif)
 
 ## Why KetGrid?
 
