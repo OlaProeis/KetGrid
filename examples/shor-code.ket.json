@@ -1,0 +1,31 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Shor's 9-Qubit Code",
+  "description": "The first quantum error correction code that protects against arbitrary single-qubit errors (both bit and phase flips). Combines bit-flip and phase-flip codes.",
+  "qubits": 9,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "CNOT", "controls": [0], "targets": [3], "column": 1 },
+    { "type": "CNOT", "controls": [0], "targets": [6], "column": 1 },
+    { "type": "H", "targets": [0], "column": 2 },
+    { "type": "H", "targets": [3], "column": 2 },
+    { "type": "H", "targets": [6], "column": 2 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 3 },
+    { "type": "CNOT", "controls": [0], "targets": [2], "column": 3 },
+    { "type": "CNOT", "controls": [3], "targets": [4], "column": 3 },
+    { "type": "CNOT", "controls": [3], "targets": [5], "column": 3 },
+    { "type": "CNOT", "controls": [6], "targets": [7], "column": 3 },
+    { "type": "CNOT", "controls": [6], "targets": [8], "column": 3 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 4 },
+    { "qubit": 1, "column": 4 },
+    { "qubit": 2, "column": 4 },
+    { "qubit": 3, "column": 4 },
+    { "qubit": 4, "column": 4 },
+    { "qubit": 5, "column": 4 },
+    { "qubit": 6, "column": 4 },
+    { "qubit": 7, "column": 4 },
+    { "qubit": 8, "column": 4 }
+  ]
+}

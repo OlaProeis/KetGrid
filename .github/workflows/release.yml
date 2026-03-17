@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: ketgrid-linux-x86_64
+            binary: ketgrid
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: ketgrid-macos-aarch64
+            binary: ketgrid
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: ketgrid-macos-x86_64
+            binary: ketgrid
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: ketgrid-windows-x86_64
+            binary: ketgrid.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libxkbcommon-dev libssl-dev libgtk-3-dev libatk1.0-dev
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }} -p ketgrid-gui
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p staging
+          cp target/${{ matrix.target }}/release/${{ matrix.binary }} staging/
+          cp README.md LICENSE staging/
+          cp -r examples staging/
+          cd staging && tar czf ../${{ matrix.artifact }}.tar.gz *
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir staging
+          copy target\${{ matrix.target }}\release\${{ matrix.binary }} staging\
+          copy README.md staging\
+          copy LICENSE staging\
+          xcopy examples staging\examples\ /E /I
+          cd staging && 7z a ..\${{ matrix.artifact }}.zip *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: false
+          body: |
+            ## KetGrid ${{ github.ref_name }}
+
+            A native desktop quantum circuit editor and simulator built in Rust.
+
+            ### Installation
+
+            Download the archive for your platform, extract it, and run the `ketgrid` binary.
+
+            | Platform | File |
+            |----------|------|
+            | Windows (x86_64) | `ketgrid-windows-x86_64.zip` |
+            | macOS (Apple Silicon) | `ketgrid-macos-aarch64.tar.gz` |
+            | macOS (Intel) | `ketgrid-macos-x86_64.tar.gz` |
+            | Linux (x86_64) | `ketgrid-linux-x86_64.tar.gz` |
+
+            ### What's New
+
+            See [CHANGELOG.md](CHANGELOG.md) for full details.
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false

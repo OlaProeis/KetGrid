@@ -1,0 +1,12 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Hadamard Gate",
+  "description": "Creates an equal superposition of |0⟩ and |1⟩ states. The Hadamard gate is fundamental to quantum computing, enabling parallelism and interference effects.",
+  "qubits": 1,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 1 }
+  ]
+}

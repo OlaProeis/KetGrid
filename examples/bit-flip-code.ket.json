@@ -1,0 +1,24 @@
+{
+  "ket_version": "0.1.0",
+  "name": "3-Qubit Bit-Flip Code",
+  "description": "Encodes a single logical qubit into three physical qubits to protect against bit-flip (X) errors. Demonstrates the basic principle of quantum error correction.",
+  "qubits": 3,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 1 },
+    { "type": "CNOT", "controls": [0], "targets": [2], "column": 2 },
+    { "type": "Barrier", "targets": [0], "column": 3 },
+    { "type": "X", "targets": [1], "column": 4 },
+    { "type": "Barrier", "targets": [0], "column": 5 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 6 },
+    { "type": "CNOT", "controls": [0], "targets": [2], "column": 6 },
+    { "type": "CNOT", "controls": [1], "targets": [0], "column": 7 },
+    { "type": "CNOT", "controls": [2], "targets": [0], "column": 7 },
+    { "type": "Toffoli", "controls": [1, 2], "targets": [0], "column": 8 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 9 },
+    { "qubit": 1, "column": 9 },
+    { "qubit": 2, "column": 9 }
+  ]
+}

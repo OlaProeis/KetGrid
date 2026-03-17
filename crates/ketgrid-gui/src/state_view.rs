@@ -1,17 +1,28 @@
 //! Quantum state visualization panel (probabilities, amplitudes, Bloch sphere).
 
+use crate::bloch::BlochSphere;
 use ketgrid_sim::state_vector::StateVector;
+use ketgrid_sim::EntanglementInfo;
 
 /// State visualization panel.
 #[derive(Debug, Default)]
 pub struct StateView {
-    /// Toggle for showing the amplitude table
+    /// Toggle for showing the amplitude table.
     show_amplitude_table: bool,
+    /// Bloch sphere visualization widget.
+    bloch_sphere: BlochSphere,
 }
 
 impl StateView {
     /// Renders the state visualization.
-    pub fn show(&mut self, ui: &mut egui::Ui, state_vector: &StateVector) {
+    ///
+    /// `entanglement`: optional entanglement info and per-qubit wire colors for display.
+    pub fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        state_vector: &StateVector,
+        entanglement: Option<(&EntanglementInfo, &[Option<egui::Color32>])>,
+    ) {
         ui.label(format!("Qubits: {}", state_vector.num_qubits()));
         ui.separator();
 
@@ -69,10 +80,73 @@ impl StateView {
         ui.add_space(16.0);
         ui.separator();
 
-        // Entropy / purity metrics (placeholder)
-        ui.label("State Metrics:");
-        ui.label("  Von Neumann entropy: —");
-        ui.label("  Purity: —");
+        self.bloch_sphere.show(ui, state_vector);
+
+        ui.add_space(16.0);
+        ui.separator();
+
+        if let Some((info, colors)) = entanglement {
+            self.show_entanglement_ui(ui, info, colors);
+        }
+    }
+
+    /// Renders the entanglement clusters section.
+    fn show_entanglement_ui(
+        &self,
+        ui: &mut egui::Ui,
+        info: &EntanglementInfo,
+        colors: &[Option<egui::Color32>],
+    ) {
+        let entangled_clusters: Vec<&Vec<usize>> =
+            info.clusters.iter().filter(|c| c.len() > 1).collect();
+
+        ui.label("Entanglement:");
+        ui.add_space(4.0);
+
+        if entangled_clusters.is_empty() {
+            ui.colored_label(
+                egui::Color32::from_gray(140),
+                "  No entanglement detected",
+            );
+        } else {
+            for cluster in &entangled_clusters {
+                let first_qubit = cluster[0];
+                let color = colors
+                    .get(first_qubit)
+                    .and_then(|c| *c)
+                    .unwrap_or(egui::Color32::WHITE);
+
+                let qubit_names: Vec<String> =
+                    cluster.iter().map(|&q| format!("q{q}")).collect();
+
+                ui.horizontal(|ui| {
+                    let (dot_rect, _) =
+                        ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
+                    ui.painter().circle_filled(dot_rect.center(), 4.0, color);
+
+                    ui.colored_label(color, qubit_names.join(", "));
+                });
+            }
+        }
+
+        ui.add_space(8.0);
+
+        // Per-qubit purity
+        ui.label("Qubit Purity:");
+        ui.add_space(2.0);
+        for (q, &purity) in info.qubit_purities.iter().enumerate() {
+            let color = colors
+                .get(q)
+                .and_then(|c| *c)
+                .unwrap_or_else(|| ui.visuals().text_color());
+            let purity_pct = purity * 100.0;
+            let label = if purity > 0.999 {
+                format!("  q{q}: pure")
+            } else {
+                format!("  q{q}: {purity_pct:.0}%")
+            };
+            ui.colored_label(color, label);
+        }
     }
 
     /// Shows the amplitude table with real and imaginary parts.
@@ -88,22 +162,49 @@ impl StateView {
         ui.label("Amplitudes (Real + Imaginary):");
         ui.add_space(4.0);
 
+        // Use a table-like grid with consistent spacing
+        let state_col_width = 70.0;
+        let real_col_width = 90.0;
+        let imag_col_width = 90.0;
+        let phase_col_width = 65.0;
+
+        let text_color = ui.visuals().text_color();
+        let weak_color = ui.visuals().weak_text_color();
+
         egui::ScrollArea::vertical()
             .id_salt("amplitudes")
             .max_height(200.0)
             .show(ui, |ui| {
-                // Header row
-                ui.horizontal(|ui| {
-                    ui.label("State").on_hover_text("Basis state |n>");
-                    ui.add_space(40.0);
-                    ui.label("Real").on_hover_text("Real part of amplitude");
-                    ui.add_space(60.0);
-                    ui.label("Imaginary").on_hover_text("Imaginary part of amplitude");
-                    ui.add_space(40.0);
-                    ui.label("Phase").on_hover_text("Phase angle in degrees");
-                });
-                ui.separator();
+                // Build the table as a single vertical layout with horizontal rows
+                // Header
+                let header_text = format!(
+                    "{: <state_width$} | {: <real_width$} | {: <imag_width$} | {: <phase_width$}",
+                    "State",
+                    "Real",
+                    "Imaginary",
+                    "Phase",
+                    state_width = (state_col_width / 8.0) as usize,
+                    real_width = (real_col_width / 8.0) as usize,
+                    imag_width = (imag_col_width / 8.0) as usize,
+                    phase_width = (phase_col_width / 8.0) as usize,
+                );
+                ui.label(egui::RichText::new(&header_text).strong().monospace().color(text_color));
 
+                // Separator line
+                let separator = format!(
+                    "{:-<state_width$}-+-{:-<real_width$}-+-{:-<imag_width$}-+-{:-<phase_width$}",
+                    "",
+                    "",
+                    "",
+                    "",
+                    state_width = (state_col_width / 8.0) as usize,
+                    real_width = (real_col_width / 8.0) as usize,
+                    imag_width = (imag_col_width / 8.0) as usize,
+                    phase_width = (phase_col_width / 8.0) as usize,
+                );
+                ui.label(egui::RichText::new(&separator).monospace().color(weak_color));
+
+                // Data rows
                 for (idx, (amp, prob)) in amplitudes.iter().zip(probs.iter()).enumerate() {
                     // Skip states with zero probability for cleaner display
                     if *prob < 1e-10 {
@@ -111,19 +212,22 @@ impl StateView {
                     }
 
                     let label = format!("|{:0width$b}>", idx, width = num_qubits);
-                    let real = amp.re;
-                    let imag = amp.im;
-                    let phase_deg = amp.arg().to_degrees();
+                    let real_str = format!("{:+.4}", amp.re);
+                    let imag_str = format!("{:+.4}", amp.im);
+                    let phase_str = format!("{:+.1}°", amp.arg().to_degrees());
 
-                    ui.horizontal(|ui| {
-                        ui.monospace(&label);
-                        ui.add_space(16.0);
-                        ui.monospace(format!("{:+.4}", real));
-                        ui.add_space(16.0);
-                        ui.monospace(format!("{:+.4}", imag));
-                        ui.add_space(16.0);
-                        ui.monospace(format!("{:+.1}°", phase_deg));
-                    });
+                    let row_text = format!(
+                        "{: <state_width$} | {: <real_width$} | {: <imag_width$} | {: <phase_width$}",
+                        label,
+                        real_str,
+                        imag_str,
+                        phase_str,
+                        state_width = (state_col_width / 8.0) as usize,
+                        real_width = (real_col_width / 8.0) as usize,
+                        imag_width = (imag_col_width / 8.0) as usize,
+                        phase_width = (phase_col_width / 8.0) as usize,
+                    );
+                    ui.label(egui::RichText::new(&row_text).monospace().color(text_color));
                 }
             });
     }

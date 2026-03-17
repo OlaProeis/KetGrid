@@ -1,0 +1,19 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Quantum Fourier Transform (3-Qubit)",
+  "description": "The QFT transforms between computational and Fourier bases. Fundamental for quantum phase estimation, Shor's algorithm, and many other quantum algorithms.",
+  "qubits": 3,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 1 },
+    { "type": "H", "targets": [1], "column": 2 },
+    { "type": "CNOT", "controls": [1], "targets": [2], "column": 3 },
+    { "type": "CNOT", "controls": [0], "targets": [2], "column": 4 },
+    { "type": "H", "targets": [2], "column": 5 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 6 },
+    { "qubit": 1, "column": 6 },
+    { "qubit": 2, "column": 6 }
+  ]
+}

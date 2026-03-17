@@ -1,0 +1,13 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Phase Gate (S)",
+  "description": "Applies a π/2 phase shift to the |1⟩ component. The S gate together with H and CNOT forms a universal gate set for quantum computation.",
+  "qubits": 1,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "S", "targets": [0], "column": 1 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 2 }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Pauli-Z Gate",
+  "description": "Demonstrates the Pauli-Z (phase flip) gate. Leaves |0⟩ unchanged but flips the sign of |1⟩. Key for creating superposition and phase kickback.",
+  "qubits": 1,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "Z", "targets": [0], "column": 1 },
+    { "type": "H", "targets": [0], "column": 2 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 3 }
+  ]
+}

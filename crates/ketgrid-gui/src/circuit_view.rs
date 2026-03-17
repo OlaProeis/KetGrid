@@ -52,6 +52,8 @@ const WIRE_HIGHLIGHT: egui::Color32 = egui::Color32::from_rgba_premultiplied(100
 const CONNECTING_LINE: egui::Color32 = egui::Color32::from_rgba_premultiplied(100, 150, 255, 120);
 const SELECTION_HIGHLIGHT: egui::Color32 = egui::Color32::from_rgb(255, 200, 100);
 const GATE_HIT_PADDING: f32 = 8.0; // Extra padding for gate hit-testing
+const STEP_CURSOR_COLOR: egui::Color32 = egui::Color32::from_rgb(0, 200, 255);
+const STEP_DIM_OVERLAY: egui::Color32 = egui::Color32::from_rgba_premultiplied(0, 0, 0, 50);
 
 /// Circuit visualization panel with drag-and-drop support.
 #[derive(Debug, Default)]
@@ -68,6 +70,12 @@ pub struct CircuitView {
 impl CircuitView {
     /// Renders the circuit editor with optional drop indicators.
     ///
+    /// `step_cursor_col`: if `Some(n)`, draws a vertical step cursor at column `n`.
+    /// Gates at columns `< n` render normally; gates at columns `>= n` are dimmed.
+    ///
+    /// `wire_colors`: per-qubit entanglement colors. `None` entries use the default
+    /// wire stroke; `Some(color)` draws that wire (and label) in the cluster color.
+    ///
     /// Returns:
     /// - The clicked drop target when the user clicks on a valid wire position while a gate is active
     /// - Gate click outcomes (for selection, context menu, etc.)
@@ -79,6 +87,8 @@ impl CircuitView {
         active_gate: Option<&GateType>,
         is_measurement_mode: bool,
         editor_state: &EditorState,
+        step_cursor_col: Option<usize>,
+        wire_colors: &[Option<egui::Color32>],
     ) -> (Option<DropTarget>, Option<GateClickOutcome>, Option<usize>) {
         let available_size = ui.available_size();
         let (rect, response) = ui.allocate_exact_size(available_size, egui::Sense::click());
@@ -110,18 +120,36 @@ impl CircuitView {
         for qubit_idx in 0..circuit.num_qubits() {
             let y = wire_y(qubit_idx, wire_y_start);
 
+            let ent_color = wire_colors.get(qubit_idx).and_then(|c| *c);
+
+            let label_color = ent_color.unwrap_or_else(|| ui.visuals().text_color());
             painter.text(
                 egui::pos2(rect.left() + 8.0, y),
                 egui::Align2::LEFT_CENTER,
                 &circuit.qubits[qubit_idx].label,
                 egui::FontId::proportional(14.0),
-                ui.visuals().text_color(),
+                label_color,
             );
+
+            // Colored dot for entangled qubits
+            if let Some(color) = ent_color {
+                painter.circle_filled(
+                    egui::pos2(column_start_x - 16.0, y),
+                    4.0,
+                    color,
+                );
+            }
+
+            let qubit_stroke = if let Some(color) = ent_color {
+                egui::Stroke::new(2.5, color)
+            } else {
+                wire_stroke
+            };
 
             painter.hline(
                 column_start_x - 10.0..=rect.right() - 10.0,
                 y,
-                wire_stroke,
+                qubit_stroke,
             );
         }
 
@@ -140,6 +168,42 @@ impl CircuitView {
                 let meas_rect = draw_measurement_with_rect(&painter, ui, egui::pos2(cx, cy));
                 self.measurement_rects.push((idx, meas_rect));
             }
+        }
+
+        // === Step cursor and dim overlay ===
+        if let Some(cursor_col) = step_cursor_col {
+            let num_q = circuit.num_qubits();
+            let y_top = wire_y(0, wire_y_start) - WIRE_SPACING / 2.0;
+            let y_bot = wire_y(num_q - 1, wire_y_start) + WIRE_SPACING / 2.0;
+            let cursor_x = column_start_x + cursor_col as f32 * COLUMN_WIDTH;
+
+            // Dim the "future" region (gates not yet applied)
+            if cursor_x < rect.right() {
+                let dim_rect = egui::Rect::from_min_max(
+                    egui::pos2(cursor_x, rect.top()),
+                    rect.right_bottom(),
+                );
+                painter.rect_filled(dim_rect, 0.0, STEP_DIM_OVERLAY);
+            }
+
+            // Draw the cursor line
+            painter.line_segment(
+                [egui::pos2(cursor_x, y_top), egui::pos2(cursor_x, y_bot)],
+                egui::Stroke::new(2.5, STEP_CURSOR_COLOR),
+            );
+
+            // Small triangle indicator at the top
+            let tri_size = 6.0;
+            let tri_points = vec![
+                egui::pos2(cursor_x, y_top - tri_size * 2.0),
+                egui::pos2(cursor_x - tri_size, y_top - tri_size * 2.0 - tri_size),
+                egui::pos2(cursor_x + tri_size, y_top - tri_size * 2.0 - tri_size),
+            ];
+            painter.add(egui::Shape::convex_polygon(
+                tri_points,
+                STEP_CURSOR_COLOR,
+                egui::Stroke::NONE,
+            ));
         }
 
         // === Gate interaction (selection, context menu) ===

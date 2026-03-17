@@ -1,0 +1,16 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Toffoli (CCNOT) Gate",
+  "description": "A universal reversible logic gate with two control qubits and one target. Flips the target only when both controls are |1⟩. Essential for classical computation reversibility.",
+  "qubits": 3,
+  "gates": [
+    { "type": "X", "targets": [0], "column": 0 },
+    { "type": "X", "targets": [1], "column": 0 },
+    { "type": "Toffoli", "controls": [0, 1], "targets": [2], "column": 1 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 2 },
+    { "qubit": 1, "column": 2 },
+    { "qubit": 2, "column": 2 }
+  ]
+}

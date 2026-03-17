@@ -1,0 +1,14 @@
+{
+  "ket_version": "0.1.0",
+  "name": "SWAP Gate",
+  "description": "Exchanges the quantum states of two qubits. Fundamental for qubit routing and reordering in quantum circuits.",
+  "qubits": 2,
+  "gates": [
+    { "type": "X", "targets": [0], "column": 0 },
+    { "type": "SWAP", "targets": [0, 1], "column": 1 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 2 },
+    { "qubit": 1, "column": 2 }
+  ]
+}

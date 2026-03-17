@@ -10,6 +10,7 @@ quantrs2 = ["dep:quantrs2"]
 [dependencies]
 ketgrid-core = { path = "../ketgrid-core" }
 nalgebra = { workspace = true }
+rayon = { workspace = true }
 quantrs2 = { version = "0.1", optional = true }
 
 [dev-dependencies]

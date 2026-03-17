@@ -1,0 +1,20 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Superdense Coding",
+  "description": "Transmits 2 classical bits using 1 qubit and pre-shared entanglement. Demonstrates that quantum communication can be more efficient than classical.",
+  "qubits": 2,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 1 },
+    { "type": "Barrier", "targets": [0], "column": 2 },
+    { "type": "Z", "targets": [0], "column": 3 },
+    { "type": "X", "targets": [0], "column": 4 },
+    { "type": "Barrier", "targets": [0], "column": 5 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 6 },
+    { "type": "H", "targets": [0], "column": 7 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 8 },
+    { "qubit": 1, "column": 8 }
+  ]
+}

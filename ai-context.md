@@ -12,9 +12,11 @@
 ## Tech Stack
 - **Language:** Rust
 - **GUI:** egui + eframe (immediate-mode)
-- **Quantum Sim:** QuantRS2 (or custom state vector fallback)
-- **Math:** nalgebra or ndarray (complex matrix ops)
+- **Quantum Sim:** Custom state vector (primary), QuantRS2 (optional feature flag)
+- **Math:** nalgebra (complex matrix ops)
+- **Parallelism:** rayon (data-parallel gate application ≥12 qubits)
 - **Serialization:** serde + serde_json
+- **Parsing:** nom (OpenQASM import)
 - **Persistence:** dirs + serde (cross-platform config/session)
 
 ## Architecture & Data Model
@@ -30,7 +32,7 @@ JSON-based `.ket.json` file format with versioning.
 - **Modularity:** One feature per file, one crate per concern.
 - **Errors:** Strict error handling, no silent failures. Use `Result<T, Error>`.
 - **Naming:** Snake_case for Rust, standard quantum notation for display (|q₀⟩, ⊕, ●).
-- **Performance:** Real-time sim feedback <100ms for ≤15 qubits. Background thread for >20.
+- **Performance:** Real-time sim feedback <100ms target for ≤15 qubits (not yet achieved for 14+). Background thread for >15. Manual trigger for >20.
 
 ## Where Things Live
 | Want to...                  | Look in...                          |
@@ -42,5 +44,7 @@ JSON-based `.ket.json` file format with versioning.
 | Manage gate palette UI      | `crates/ketgrid-gui/src/gate_palette.rs`|
 | Visualize state/probs       | `crates/ketgrid-gui/src/state_view.rs`|
 | Load/save JSON circuits     | `crates/ketgrid-core/src/format/`   |
+| Import/export external formats | `crates/ketgrid-core/src/format/` |
 | Example circuits            | `examples/`                         |
+| Browse/load examples        | `crates/ketgrid-gui/src/examples.rs`|
 | Project docs                | `docs/`                             |

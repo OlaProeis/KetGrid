@@ -1,0 +1,12 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Pauli-X Gate",
+  "description": "Demonstrates the Pauli-X (NOT) gate, the quantum equivalent of a classical bit flip. Applies X to |0⟩ producing |1⟩.",
+  "qubits": 1,
+  "gates": [
+    { "type": "X", "targets": [0], "column": 0 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 1 }
+  ]
+}

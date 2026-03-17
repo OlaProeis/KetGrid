@@ -1,213 +1,85 @@
 {
 	"meta": {
-		"generatedAt": "2026-03-16T11:33:02.818Z",
-		"tasksAnalyzed": 25,
-		"totalTasks": 25,
-		"analysisCount": 25,
+		"generatedAt": "2026-03-17T10:29:06.260Z",
+		"tasksAnalyzed": 9,
+		"totalTasks": 33,
+		"analysisCount": 9,
 		"thresholdScore": 5,
 		"projectName": "Task Master",
 		"usedResearch": true
 	},
 	"complexityAnalysis": [
 		{
-			"taskId": 12,
-			"taskTitle": "Set up Cargo workspace and project scaffolding",
-			"complexityScore": 3,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "Break down into: 1) Create workspace Cargo.toml and crate directories, 2) Configure dependencies and basic builds for each crate, 3) Implement minimal eframe app in ket-gui with cross-platform targets.",
-			"reasoning": "Standard Rust workspace setup with known dependencies (egui, eframe, nalgebra); low complexity due to boilerplate nature, cross-platform config is routine, testing via cargo commands is straightforward."
-		},
-		{
-			"taskId": 13,
-			"taskTitle": "Implement Circuit data model in ket-core",
-			"complexityScore": 4,
-			"recommendedSubtasks": 2,
-			"expansionPrompt": "Divide into: 1) Define core structs and enums (Circuit, QubitWire, PlacedGate, GateType), 2) Add Serialize/Deserialize derives and basic validation.",
-			"reasoning": "Straightforward struct/enum definitions with serde; moderate complexity from defining 15+ GateType variants and ensuring serializable design per PRD."
-		},
-		{
-			"taskId": 14,
-			"taskTitle": "Implement QubitWire management",
-			"complexityScore": 6,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "Subtasks: 1) Implement QubitWire struct, 2) add_qubit() and remove_qubit(), 3) rename_qubit(), 4) reorder_qubits() with gate index auto-updates.",
-			"reasoning": "Requires careful index management and auto-updating gate targets on structural changes; higher complexity due to potential off-by-one errors and consistency guarantees."
-		},
-		{
-			"taskId": 15,
-			"taskTitle": "Define gate matrices and properties",
-			"complexityScore": 5,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "Split: 1) Single-qubit gate matrices (H,X,Y,Z,S,T), 2) Multi-qubit matrices (CNOT,CZ,SWAP,Toffoli), 3) Parameterized rotations Rx/Ry/Rz.",
-			"reasoning": "Involves precise matrix definitions with nalgebra/Complex; moderate due to math accuracy requirements and testing against known quantum gate standards."
-		},
-		{
-			"taskId": 16,
-			"taskTitle": "Integrate QuantRS2 StateVectorSimulator",
-			"complexityScore": 7,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "Break into: 1) Add QuantRS2 dependency with feature flags, 2) Implement StateVectorSimulator wrapper, 3) Fallback custom simulator and Bell state tests.",
-			"reasoning": "Third-party integration with fallback; complexity from API wrapping, error handling, and ensuring simulation fidelity for quantum states."
-		},
-		{
-			"taskId": 17,
-			"taskTitle": "Implement basic circuit renderer",
-			"complexityScore": 7,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "Subtasks: 1) Wire rendering, 2) Single-qubit gate boxes, 3) Multi-qubit controls/connections, 4) Grid/column layout in egui.",
-			"reasoning": "Custom egui painting for quantum circuit diagrams; UI layout challenges with variable gate sizes and connections increase complexity."
-		},
-		{
-			"taskId": 18,
-			"taskTitle": "Add probability histogram visualization",
-			"complexityScore": 5,
-			"recommendedSubtasks": 2,
-			"expansionPrompt": "Divide: 1) Bar chart with probability/phase coloring, 2) Toggleable amplitude table.",
-			"reasoning": "Standard egui plotting with phase-based colors; moderate due to quantum state visualization specifics but leverages egui primitives."
-		},
-		{
-			"taskId": 19,
-			"taskTitle": "Implement JSON circuit serialization",
-			"complexityScore": 4,
-			"recommendedSubtasks": 2,
-			"expansionPrompt": "1) Serde impl for Circuit and components, 2) File I/O methods with validation.",
-			"reasoning": "Serde handles most serialization; low-moderate complexity with schema validation and roundtrip testing."
-		},
-		{
-			"taskId": 20,
-			"taskTitle": "Create 5 example circuits",
-			"complexityScore": 3,
-			"recommendedSubtasks": 0,
-			"expansionPrompt": "",
-			"reasoning": "Manual creation of standard quantum circuits (Bell, GHZ, etc.); low effort, data-only task with verification via existing sim."
-		},
-		{
-			"taskId": 21,
-			"taskTitle": "Add status bar with metrics",
-			"complexityScore": 4,
-			"recommendedSubtasks": 2,
-			"expansionPrompt": "1) Basic qubit/gate counts, 2) Memory estimates from QuantRS2 with warnings.",
-			"reasoning": "Simple egui widget aggregating existing data; straightforward calculations."
-		},
-		{
-			"taskId": 22,
-			"taskTitle": "Implement gate palette UI",
-			"complexityScore": 5,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "Subtasks: 1) Collapsible sections, 2) Gate buttons with icons/text, 3) Drag mode triggering.",
-			"reasoning": "egui panel with categorization; moderate UI state management for drag selection."
-		},
-		{
-			"taskId": 23,
-			"taskTitle": "Add drag-and-drop gate placement",
-			"complexityScore": 8,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "1) Drag state tracking from palette, 2) Drop zones/wire highlights, 3) Single-qubit insertion, 4) Multi-qubit placement workflow.",
-			"reasoning": "Complex egui drag-drop interaction with hit detection and circuit mutation; high due to precise positioning and UX polish."
-		},
-		{
-			"taskId": 24,
-			"taskTitle": "Implement gate context menu",
-			"complexityScore": 6,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "1) Right-click context menus, 2) Edit/delete/copy operations, 3) Multi-select and paste.",
-			"reasoning": "egui context menus with param editing; complexity from selection state and paste positioning."
-		},
-		{
-			"taskId": 25,
-			"taskTitle": "Add undo/redo system",
-			"complexityScore": 9,
-			"recommendedSubtasks": 5,
-			"expansionPrompt": "Break down: 1) Define EditOperation enum, 2) EditHistory stack impl, 3) Operation recording for all edits, 4) Undo/redo dispatch, 5) Key bindings.",
-			"reasoning": "Command pattern for circuit mutations; high complexity ensuring all operations (add/remove/move/edit) are reversible without state corruption."
-		},
-		{
-			"taskId": 26,
-			"taskTitle": "Implement real-time debounced simulation",
-			"complexityScore": 8,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "1) Edit event detection, 2) Tokio debounce timer, 3) Background sim thread, 4) Manual sim fallback for large circuits.",
-			"reasoning": "Async threading with debounce and state sync; challenges in thread safety and performance for real-time quantum sim."
-		},
-		{
-			"taskId": 27,
-			"taskTitle": "Add Bloch sphere visualization",
-			"complexityScore": 8,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "1) Reduced density matrix via partial trace, 2) Bloch vector computation, 3) egui Painter2d sphere/arrow, 4) Interactive view rotation.",
-			"reasoning": "Quantum math (partial trace) + custom egui 3D projection; high due to numerical stability and visualization accuracy."
-		},
-		{
-			"taskId": 28,
-			"taskTitle": "Implement step-through mode",
-			"complexityScore": 7,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "1) Stepper controls UI, 2) Column-wise gate application, 3) State update and cursor rendering.",
-			"reasoning": "Incremental simulation with UI sync; complexity in partial circuit execution and reversible stepping."
-		},
-		{
-			"taskId": 29,
-			"taskTitle": "Add entanglement visualization",
-			"complexityScore": 9,
-			"recommendedSubtasks": 4,
-			"expansionPrompt": "1) Concurrence/entanglement entropy calc, 2) Cluster detection algorithm, 3) Color assignment, 4) Rendering integration.",
-			"reasoning": "Advanced quantum info theory metrics and graph clustering; high mathematical and algorithmic complexity."
-		},
-		{
-			"taskId": 30,
-			"taskTitle": "Implement circuit statistics panel",
-			"complexityScore": 5,
-			"recommendedSubtasks": 2,
-			"expansionPrompt": "1) Gate counts/depth/qubit stats, 2) Memory/hardware estimates.",
-			"reasoning": "Aggregation of circuit properties; straightforward analytics UI."
-		},
-		{
-			"taskId": 31,
-			"taskTitle": "Implement OpenQASM 2.0 export",
-			"complexityScore": 6,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "1) Gate mapping to QASM syntax, 2) Header/qreg/creg/barrier generation, 3) String formatting and validation.",
-			"reasoning": "Format-specific mapping with standard (qreg h cx); moderate parser-like string construction."
-		},
-		{
-			"taskId": 32,
-			"taskTitle": "Implement Qiskit Python export",
-			"complexityScore": 5,
-			"recommendedSubtasks": 2,
-			"expansionPrompt": "1) Qiskit QuantumCircuit code generation, 2) Gate mapping and parameter handling.",
-			"reasoning": "Similar to QASM but Python syntax; lower complexity as string templating."
-		},
-		{
-			"taskId": 33,
-			"taskTitle": "Add OpenQASM import",
-			"complexityScore": 9,
-			"recommendedSubtasks": 5,
-			"expansionPrompt": "1) Nom parser for QASM grammar, 2) qreg/gate/measure handling, 3) GateType mapping, 4) Error recovery, 5) Roundtrip testing.",
-			"reasoning": "Full parser implementation with nom; high complexity due to grammar ambiguities and error handling."
-		},
-		{
 			"taskId": 34,
 			"taskTitle": "Implement SVG circuit export",
-			"complexityScore": 6,
-			"recommendedSubtasks": 3,
-			"expansionPrompt": "1) Capture egui painter paths, 2) Convert to SVG paths, 3) A4 scaling and export.",
-			"reasoning": "Graphics path translation; moderate effort reusing renderer logic."
-		},
-		{
-			"taskId": 35,
-			"taskTitle": "Create example library browser",
 			"complexityScore": 5,
 			"recommendedSubtasks": 3,
-			"expansionPrompt": "1) UI categories/search, 2) Example loading, 3) Thumbnails/previews generation.",
-			"reasoning": "egui file browser with previews; standard UI but thumbnail rendering adds minor complexity."
+			"expansionPrompt": "1) Extract egui painter paths from circuit_view renderer, 2) Convert painter commands to SVG path elements with proper transformations, 3) Implement A4 page scaling, viewport fitting, and file export functionality with crisp rendering validation.",
+			"reasoning": "Moderate complexity involving graphics path conversion and scaling math. Reuses existing renderer paths reducing implementation risk. Requires understanding egui painter API and SVG spec but follows clear pattern. Testing via browser verification is straightforward. Dependencies minimal."
 		},
 		{
-			"taskId": 36,
-			"taskTitle": "Add keyboard shortcuts",
-			"complexityScore": 4,
-			"recommendedSubtasks": 2,
-			"expansionPrompt": "1) Core shortcuts (undo/delete/copy), 2) Wire management hotkeys.",
-			"reasoning": "egui input handling; low complexity wiring to existing actions."
+			"taskId": 37,
+			"taskTitle": "Research cuStateVec Rust bindings feasibility and create decision matrix",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "1) Analyze cuStateVec C API and Rust CUDA binding options (cust vs rustacuda), 2) Document Windows build requirements and CMake integration challenges, 3) Create performance comparison matrix vs pure Rust alternatives, 4) Build minimal proof-of-concept linking cuStateVec, 5) Produce decision report with risk assessment and recommendation.",
+			"reasoning": "High research complexity due to multiple technical domains (NVIDIA CUDA ecosystem, Rust FFI, Windows build systems, quantum simulation performance). Requires deep investigation across platforms, dependency analysis, and creating comprehensive decision matrix. Proof-of-concept adds implementation risk."
+		},
+		{
+			"taskId": 38,
+			"taskTitle": "Design GPU simulation trait interface",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "1) Define core QuantumSimulator trait with all required methods and error handling, 2) Implement BackendSelector with runtime detection logic, 3) Create object-safe trait object support and blanket implementations, 4) Add integration tests with mock CPU/GPU backends and feature flag handling.",
+			"reasoning": "Moderate-high design complexity for extensible trait architecture. Requires deep Rust trait system knowledge (object safety, lifetimes, generics). Backend selection logic adds runtime complexity. Strong test strategy reduces risk but multiple dependencies increase coordination needs."
+		},
+		{
+			"taskId": 39,
+			"taskTitle": "Implement CUDA state vector kernels for quantum gate operations",
+			"complexityScore": 9,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "1) Write CUDA kernel for single-qubit gate application with coalesced memory access, 2) Implement controlled gate kernel (CNOT/CZ) with conditional execution, 3) Develop swap gate kernel for qubit reordering, 4) Create Rust-CUDA interop bindings using cust crate, 5) Add gate fusion optimization for adjacent gates, 6) Implement comprehensive unit/integration tests with CPU validation.",
+			"reasoning": "Very high complexity combining CUDA kernel development, GPU memory optimization, Rust FFI, and quantum algorithm correctness. Gate fusion and 24GB state vector handling add significant performance engineering challenges. Multiple failure modes in GPU programming require extensive testing."
+		},
+		{
+			"taskId": 40,
+			"taskTitle": "Add GPU memory management with VRAM tracking and circuit chunking",
+			"complexityScore": 9,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "1) Implement VRAM estimation and availability checking functions, 2) Develop circuit chunking algorithm for OOM scenarios, 3) Create chunked circuit execution with host-device transfers, 4) Build memory pool allocator for small buffer management, 5) Integrate with QuantumSimulator trait and add stress testing.",
+			"reasoning": "High complexity due to sophisticated GPU memory management patterns, circuit analysis algorithms, and async host-device synchronization. Chunking requires deep understanding of quantum circuit structure. Memory pool implementation adds allocator complexity. Critical for production reliability."
+		},
+		{
+			"taskId": 41,
+			"taskTitle": "Implement hybrid CPU/GPU scheduling with automatic backend selection",
+			"complexityScore": 8,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "1) Implement runtime backend selection logic based on qubit count and hardware detection, 2) Develop state vector serialization/deserialization between CPU/GPU, 3) Create UI integration with manual override and warnings, 4) Add comprehensive testing for transfer correctness and performance.",
+			"reasoning": "High complexity integrating multiple systems (scheduler, trait system, UI, memory management). State vector transfer precision critical for correctness. UI coordination adds frontend complexity. Performance trade-offs require careful tuning and benchmarking."
+		},
+		{
+			"taskId": 42,
+			"taskTitle": "Evaluate quantum kernel emulator approach post-v1.0",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "1) Execute comprehensive benchmarks across CPU/GPU backends with standardized circuits, 2) Perform scalability analysis and VRAM validation testing, 3) Conduct competitive analysis against QCGPU-Rust and other simulators, 4) Create detailed evaluation report with optimization recommendations.",
+			"reasoning": "High analytical complexity requiring systematic benchmarking, competitive research, and architectural review. Multiple measurement dimensions (performance, scalability, extensibility). Report synthesis demands clear communication of technical trade-offs."
+		},
+		{
+			"taskId": 43,
+			"taskTitle": "Reconsider simulation approach: quantum kernel emulator vs state vector",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "1) Research existing quantum kernel emulator implementations and approaches, 2) Create prototype spike comparing state vector vs kernel emulator for Bell state, 3) Produce decision document with complexity/performance trade-offs and implementation roadmap.",
+			"reasoning": "Strategic decision complexity involving research, prototyping, and architectural evaluation. Requires understanding quantum simulation paradigms and educational value trade-offs. Prototype adds implementation risk but scoped to minimal viable comparison."
+		},
+		{
+			"taskId": 44,
+			"taskTitle": "Optimize State Vector Simulation Performance",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "1) Implement pre-allocated reusable buffers to eliminate allocation overhead, 2) Add Rayon parallelization for subspace iteration, 3) Develop incremental simulation with dirty column tracking, 4) Implement gate fusion optimization for common patterns, 5) Add SIMD support via nalgebra and comprehensive performance profiling.",
+			"reasoning": "Moderate-high optimization complexity across multiple techniques (memory, parallelism, incremental computation, fusion). Requires performance profiling expertise and careful correctness validation. Multiple interdependencies between optimizations increase testing burden."
 		}
 	]
 }

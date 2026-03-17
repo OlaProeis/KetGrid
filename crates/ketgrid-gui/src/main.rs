@@ -3,10 +3,14 @@
 use eframe::NativeOptions;
 
 mod app;
+mod bloch;
 mod circuit_view;
 mod editor;
+mod examples;
 mod gate_palette;
+mod history;
 mod state_view;
+mod stats_panel;
 
 use app::KetGridApp;
 

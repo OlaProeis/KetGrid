@@ -2,7 +2,7 @@
 
 KetGrid development follows a phased approach. This document tracks what's been completed and what's planned.
 
-**Current status:** Phase 1 complete, Phase 2 in progress (75% done).
+**Current status:** v0.1.0 released — Phases 1–4 complete. Working on performance optimization and future directions.
 
 ---
 
@@ -23,50 +23,51 @@ KetGrid development follows a phased approach. This document tracks what's been 
 
 ---
 
-## Phase 2: Interactive Visual Editor 🔧
+## Phase 2: Interactive Visual Editor ✅
 
-*Core editing is working. Remaining items focus on polish and power-user features.*
+*All Phase 2 items are complete.*
 
 - [x] Gate palette with categorized, collapsible sections
 - [x] Drag-and-drop gate placement with visual indicators
-- [ ] **Gate context menu** — right-click for edit parameters, delete, copy/paste
-- [ ] **Undo/redo system** — operation-based edit history with Ctrl+Z/Y
-- [ ] **Real-time debounced simulation** — auto-simulate on edits, background thread for large circuits
-- [ ] **Keyboard shortcuts** — Delete, Ctrl+C/V, wire management hotkeys
+- [x] Gate context menu — right-click for edit parameters, delete, copy/paste
+- [x] Undo/redo system — operation-based edit history with Ctrl+Z/Y
+- [x] Real-time debounced simulation — auto-simulate on edits, background thread for large circuits
+- [x] Keyboard shortcuts — Delete, Ctrl+C/V, wire management hotkeys
 
 ---
 
-## Phase 3: Visualization & Analysis
+## Phase 3: Visualization & Analysis ✅
 
-*Rich visualization to make quantum states tangible.*
+*All Phase 3 items are complete.*
 
-- [ ] **Bloch sphere** — 2D-projected Bloch sphere per qubit using reduced density matrix
-- [ ] **Step-through mode** — single-gate stepping with playback controls (step, play, reset)
-- [ ] **Entanglement visualization** — color-coded qubit wires showing entanglement groups
-- [ ] **Circuit statistics panel** — gate counts by type, circuit depth, hardware time estimates
+- [x] Bloch sphere — 2D-projected Bloch sphere per qubit using reduced density matrix
+- [x] Step-through mode — single-gate stepping with playback controls (step, play, reset)
+- [x] Entanglement visualization — color-coded qubit wires showing entanglement groups
+- [x] Circuit statistics panel — gate counts by type, circuit depth, hardware time estimates
 
 ---
 
-## Phase 4: Export, Import & Ecosystem
+## Phase 4: Export, Import & Ecosystem ✅
 
-*Interoperate with the quantum computing ecosystem.*
+*All Phase 4 items are complete.*
 
-- [ ] **OpenQASM 2.0 export** — standard quantum assembly format
-- [ ] **Qiskit Python export** — generate importable `QuantumCircuit` code
-- [ ] **OpenQASM import** — parse QASM files into KetGrid circuits
-- [ ] **SVG circuit export** — vector graphics for documentation and presentations
-- [ ] **Example library browser** — searchable UI with 15+ categorized circuits
+- [x] OpenQASM 2.0 export — standard quantum assembly format
+- [x] Qiskit Python export — generate importable `QuantumCircuit` code
+- [x] OpenQASM 2.0 import — parse QASM files into KetGrid circuits via nom parser
+- [x] SVG circuit export — vector graphics for documentation and presentations
+- [x] Example library browser — searchable UI with 21 categorized circuits
 
 ---
 
 ## Phase 5: Advanced Features (Post-1.0)
 
-*Planned for after the initial stable release.*
+*Planned for future releases.*
 
+- [ ] **Performance optimization** — rayon parallelism tuning, gate fusion improvements, SIMD via nalgebra
 - [ ] **Noise simulation** — depolarizing, amplitude/phase damping models; ideal vs noisy comparison
 - [ ] **Parameterized circuits** — slider-controlled rotation gates with parameter sweep plots
 - [ ] **Custom gate definitions** — define gates as sub-circuits, gate decomposition view
-- [ ] **Tutorial mode** — guided interactive lessons, challenges ("Build a circuit that produces |Phi+>")
+- [ ] **Tutorial mode** — guided interactive lessons, challenges ("Build a circuit that produces |Φ+⟩")
 - [ ] **GPU acceleration** — CUDA state vector simulation for large circuits (20+ qubits)
   - Trait-based backend abstraction (CPU/GPU)
   - CUDA kernels for gate operations
@@ -82,27 +83,28 @@ After v1.0.0, evaluate evolving from state vector simulation to a full **quantum
 - **Probabilistic values that collapse on observation** — measurement as a distinct, visible event rather than just reading amplitudes
 - **True entanglement simulation** — when one qubit is measured, correlated qubits instantly reflect the collapsed state
 
-This approach could make quantum phenomena more visceral and educational, potentially differentiating KetGrid from all existing circuit tools. See Task 43 in tasks.json for details.
+This approach could make quantum phenomena more visceral and educational, potentially differentiating KetGrid from all existing circuit tools.
 
 ---
 
 ## Version Milestones
 
-### v0.1.0 — MVP (Phase 1 + 2)
-- Visually build a 5-qubit circuit via drag-and-drop
-- Real-time simulation results
-- Save/load circuits as JSON
-- Cross-platform (Windows, macOS, Linux)
+### v0.1.0 — MVP ✅ (Released)
+- Visually build quantum circuits via drag-and-drop
+- Real-time simulation results with Bloch sphere and step-through
+- Save/load circuits as JSON, export to OpenQASM/Qiskit/SVG
+- 21 example circuits with browsable library
+- Cross-platform release builds (Windows, macOS, Linux)
 
-### v0.5.0 — Visualization (Phase 3)
-- Bloch sphere visualization
-- Step-through mode
-- Entanglement visualization
+### v0.5.0 — Performance & Polish
+- Simulation performance optimization (target: <100ms for 15 qubits)
+- Noise simulation
+- Parameterized circuit UI with sliders
 
-### v1.0.0 — Ecosystem (Phase 4)
-- Export to Qiskit, OpenQASM, LaTeX
-- Import from OpenQASM
-- 15+ example circuits
+### v1.0.0 — Full Platform
+- GPU acceleration for large circuits
+- Custom gate definitions
+- Tutorial mode
 - Stable `ketgrid-core` API, published on crates.io
 
 ---
@@ -111,8 +113,8 @@ This approach could make quantum phenomena more visceral and educational, potent
 
 Check the roadmap items above and pick something that interests you. The best places to start:
 
-- **Phase 2 items** are the highest priority — they complete the core editing experience
-- **Phase 4 export formats** are well-scoped and independent of each other
+- **Performance optimization** — profiling and improving simulation speed
+- **Phase 5 features** — noise simulation, parameterized circuits
 - **Example circuits** — adding more quantum algorithm examples is always welcome
 
 See [CONTRIBUTING section in README](README.md#contributing) for setup instructions.

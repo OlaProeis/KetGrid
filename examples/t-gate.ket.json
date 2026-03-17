@@ -1,0 +1,13 @@
+{
+  "ket_version": "0.1.0",
+  "name": "T Gate (π/8)",
+  "description": "Applies a π/4 phase shift to |1⟩. The T gate is essential for universal quantum computation and quantum error correction. Also known as the π/8 gate.",
+  "qubits": 1,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "T", "targets": [0], "column": 1 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 2 }
+  ]
+}

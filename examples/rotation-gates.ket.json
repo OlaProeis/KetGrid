@@ -1,0 +1,14 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Rotation Gates (Rx, Ry, Rz)",
+  "description": "Demonstrates parameterized rotation gates. Rx rotates around X-axis, Ry around Y-axis, Rz around Z-axis. These gates enable continuous quantum operations.",
+  "qubits": 1,
+  "gates": [
+    { "type": "Rx", "targets": [0], "column": 0, "params": [1.57079632679] },
+    { "type": "Ry", "targets": [0], "column": 1, "params": [1.57079632679] },
+    { "type": "Rz", "targets": [0], "column": 2, "params": [1.57079632679] }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 3 }
+  ]
+}

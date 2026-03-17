@@ -1,0 +1,32 @@
+{
+  "ket_version": "0.1.0",
+  "name": "3-Qubit Phase-Flip Code",
+  "description": "Encodes a single logical qubit to protect against phase-flip (Z) errors using the Hadamard basis. Converts Z errors into correctable X errors.",
+  "qubits": 3,
+  "gates": [
+    { "type": "H", "targets": [0], "column": 0 },
+    { "type": "H", "targets": [0], "column": 1 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 2 },
+    { "type": "CNOT", "controls": [0], "targets": [2], "column": 3 },
+    { "type": "H", "targets": [0], "column": 4 },
+    { "type": "H", "targets": [1], "column": 4 },
+    { "type": "H", "targets": [2], "column": 4 },
+    { "type": "Barrier", "targets": [0], "column": 5 },
+    { "type": "Z", "targets": [1], "column": 6 },
+    { "type": "Barrier", "targets": [0], "column": 7 },
+    { "type": "H", "targets": [0], "column": 8 },
+    { "type": "H", "targets": [1], "column": 8 },
+    { "type": "H", "targets": [2], "column": 8 },
+    { "type": "CNOT", "controls": [0], "targets": [1], "column": 9 },
+    { "type": "CNOT", "controls": [0], "targets": [2], "column": 9 },
+    { "type": "CNOT", "controls": [1], "targets": [0], "column": 10 },
+    { "type": "CNOT", "controls": [2], "targets": [0], "column": 10 },
+    { "type": "Toffoli", "controls": [1, 2], "targets": [0], "column": 11 },
+    { "type": "H", "targets": [0], "column": 12 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 13 },
+    { "qubit": 1, "column": 13 },
+    { "qubit": 2, "column": 13 }
+  ]
+}

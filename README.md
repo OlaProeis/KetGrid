@@ -31,53 +31,66 @@ Every existing quantum circuit tool is either a static Python plot, a web app, o
 
 ## Features
 
-### What's Working Now
+### Circuit Editor
+- **Drag-and-drop** gate placement on qubit wires with visual drop indicators
+- **Gate palette** with collapsible categories: Basic (H, X, Y, Z), Phase (S, T), Rotation (Rx, Ry, Rz), Multi-Qubit (CNOT, CZ, SWAP, Toffoli), Measurement
+- **Right-click context menu** for editing gate parameters, copy, paste, and delete
+- **Wire management** — add, remove, rename, and reorder qubit wires
+- **Undo/redo** — operation-based history with Ctrl+Z / Ctrl+Y (100 operations deep)
+- **Keyboard shortcuts** — Delete, Ctrl+C/V, wire management hotkeys
 
-- **Circuit Editor** — drag-and-drop gate placement on qubit wires with visual drop indicators
-- **Gate Palette** — categorized panel with all standard quantum gates (H, X, Y, Z, S, T, Rx, Ry, Rz, CNOT, CZ, SWAP, Toffoli)
-- **State Vector Simulation** — custom simulator with support for all gate types including parameterized rotations
-- **Probability Visualization** — phase-aware histogram with color-coded bars and toggleable amplitude table
-- **Wire Management** — add, remove, rename, and reorder qubit wires
-- **JSON Format** — save and load circuits as `.ket.json` files with versioning
-- **Status Bar** — real-time qubit count, gate count, and memory usage estimates
-- **Example Circuits** — Bell state, GHZ, Deutsch-Jozsa, teleportation, Grover (2-qubit)
+### Simulation
+- **Real-time state vector simulation** with 100ms debounced updates on a background thread
+- **Step-through mode** — advance one gate column at a time with playback controls (step, play, reset)
+- **Incremental re-simulation** — only recomputes from the modified column forward
+- **Gate fusion** — consecutive single-qubit gates on the same qubit composed into a single matrix
+- **Rayon parallelism** — automatic parallelization for ≥12 qubit circuits
 
-### Coming Soon
+### Visualization
+- **Probability histogram** with phase-aware coloring and toggleable amplitude table
+- **Bloch sphere** — per-qubit 2D-projected Bloch sphere using reduced density matrix
+- **Entanglement visualization** — color-coded qubit wires showing entanglement groups
+- **Circuit statistics** — gate counts by type, circuit depth, qubit usage, memory and hardware time estimates
+- **Status bar** — real-time qubit count, gate count, and memory usage
 
-See the full [Roadmap](ROADMAP.md) for details.
+### Export & Import
+- **OpenQASM 2.0 export** — standard quantum assembly format
+- **OpenQASM 2.0 import** — parse QASM files with full gate mapping and ASAP scheduling
+- **Qiskit Python export** — generate importable `QuantumCircuit` code
+- **SVG export** — publication-quality vector circuit diagrams
+- **JSON format** — native `.ket.json` save/load with versioned schema
 
-- Gate context menu (right-click edit/delete/copy)
-- Undo/redo system
-- Real-time debounced simulation on background thread
-- Bloch sphere visualization
-- Step-through mode with playback controls
-- Entanglement visualization
-- OpenQASM & Qiskit export/import
-- SVG/PNG circuit export
-- Keyboard shortcuts
+### Example Library
+- **21 built-in circuits** organized by category with searchable browser
+- **Fundamentals**: Bell state, Hadamard, Pauli gates, Phase gate, T gate, Rotations, SWAP, Toffoli
+- **Algorithms**: Deutsch-Jozsa, Bernstein-Vazirani, Simon's, Grover (2-qubit), QFT (3-qubit), Superdense coding, Teleportation
+- **Error Correction**: Bit-flip code, Phase-flip code, Shor code
 
 ### Future Directions
 
-Post-v1.0, we're considering a **quantum kernel emulator** approach that would model quantum phenomena more faithfully — showing 1-to-n qubit relationships and probabilistic measurement collapse in a visceral way. See the [Roadmap](ROADMAP.md) for details.
+See the full [Roadmap](ROADMAP.md) for details on planned features including GPU acceleration, noise simulation, parameterized circuits, and a potential **quantum kernel emulator** approach.
 
-## Getting Started
+## Download
+
+Pre-built binaries are available on the [Releases](https://github.com/OlaProeis/KetGrid/releases) page for:
+- **Windows** (x86_64)
+- **macOS** (Apple Silicon and Intel)
+- **Linux** (x86_64)
+
+## Build from Source
 
 ### Prerequisites
 
 - [Rust](https://rustup.rs/) (edition 2024)
 - A C/C++ linker (comes with Visual Studio Build Tools on Windows, Xcode on macOS, `build-essential` on Linux)
+- Linux only: `libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev libgtk-3-dev`
 
-### Build from Source
+### Build & Run
 
 ```bash
 git clone https://github.com/OlaProeis/KetGrid.git
 cd KetGrid
 cargo build --release
-```
-
-### Run
-
-```bash
 cargo run --release -p ketgrid-gui
 ```
 
@@ -91,26 +104,13 @@ target/release/ketgrid.exe
 target/release/ketgrid
 ```
 
-### Load an Example Circuit
-
-Example circuits are in the `examples/` directory:
-
-```
-examples/
-├── bell.ket.json           # Bell state (|Φ+⟩)
-├── ghz.ket.json            # GHZ state (3-qubit entanglement)
-├── deutsch-jozsa.ket.json  # Deutsch-Jozsa algorithm
-├── teleportation.ket.json  # Quantum teleportation
-└── grover-2qubit.ket.json  # Grover's search (2-qubit)
-```
-
 ## Architecture
 
 KetGrid uses a Cargo workspace with three crates, keeping concerns cleanly separated:
 
 ```
 crates/
-├── ketgrid-core/   # Circuit data model, gate definitions, serialization
+├── ketgrid-core/   # Circuit data model, gate definitions, serialization, import/export
 ├── ketgrid-sim/    # State vector simulation engine
 └── ketgrid-gui/    # egui application (renderer, editor, palette, visualizations)
 ```
@@ -126,7 +126,9 @@ crates/
 | Language | Rust |
 | GUI | egui + eframe |
 | Math | nalgebra (complex matrix ops) |
+| Parallelism | rayon |
 | Serialization | serde + serde_json |
+| Parsing | nom (OpenQASM import) |
 | Persistence | dirs (cross-platform paths) |
 
 ## Circuit File Format
@@ -184,17 +186,10 @@ Please see the [Roadmap](ROADMAP.md) for planned features and areas where help i
 ### Development Setup
 
 ```bash
-# Clone the repo
 git clone https://github.com/OlaProeis/KetGrid.git
 cd KetGrid
-
-# Check everything compiles
 cargo check --workspace
-
-# Run tests
 cargo test --workspace
-
-# Run the app in development mode
 cargo run -p ketgrid-gui
 ```
 
@@ -209,7 +204,9 @@ cargo run -p ketgrid-gui
 | Manage gate palette UI | `crates/ketgrid-gui/src/gate_palette.rs` |
 | Visualize state/probabilities | `crates/ketgrid-gui/src/state_view.rs` |
 | Load/save JSON circuits | `crates/ketgrid-core/src/format/` |
+| Import/export (QASM, Qiskit, SVG) | `crates/ketgrid-core/src/format/` |
 | Example circuits | `examples/` |
+| Browse/load examples | `crates/ketgrid-gui/src/examples.rs` |
 
 ## Documentation
 
@@ -226,6 +223,19 @@ Technical documentation lives in `docs/`:
 - [Gate Palette](docs/gate-palette.md) — gate selection panel
 - [Example Circuits](docs/example-circuits.md) — built-in examples
 - [Drag-and-Drop Placement](docs/drag-and-drop-placement.md) — editor interaction model
+- [Gate Context Menu](docs/gate-context-menu.md) — right-click operations
+- [Undo/Redo](docs/undo-redo.md) — operation-based edit history
+- [Debounced Simulation](docs/debounced-simulation.md) — background sim with dirty-column tracking
+- [Bloch Sphere](docs/bloch-sphere.md) — per-qubit Bloch sphere visualization
+- [Step-Through Mode](docs/step-through-mode.md) — single-gate stepping and playback
+- [Entanglement Visualization](docs/entanglement-visualization.md) — color-coded entanglement clusters
+- [Circuit Statistics](docs/circuit-statistics.md) — detailed circuit metrics panel
+- [OpenQASM Export](docs/openqasm-export.md) — QASM 2.0 export format
+- [OpenQASM Import](docs/openqasm-import.md) — QASM 2.0 parser and import
+- [Qiskit Export](docs/qiskit-export.md) — Qiskit Python code generation
+- [SVG Export](docs/svg-export.md) — vector circuit diagram export
+- [Example Library Browser](docs/example-library-browser.md) — categorized example browser UI
+- [Keyboard Shortcuts](docs/keyboard-shortcuts.md) — complete shortcut reference
 
 ## License
 

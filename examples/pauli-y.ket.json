@@ -1,0 +1,12 @@
+{
+  "ket_version": "0.1.0",
+  "name": "Pauli-Y Gate",
+  "description": "Demonstrates the Pauli-Y gate, which rotates the Bloch vector by π around the Y-axis. Combines bit flip and phase flip operations.",
+  "qubits": 1,
+  "gates": [
+    { "type": "Y", "targets": [0], "column": 0 }
+  ],
+  "measurements": [
+    { "qubit": 0, "column": 1 }
+  ]
+}

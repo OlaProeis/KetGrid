@@ -1,17 +1,72 @@
 //! Main egui application shell with three-panel layout.
 
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
+
 use ketgrid_core::circuit::PlacedGate;
 use ketgrid_core::gate::GateType;
 use ketgrid_core::Circuit;
-use ketgrid_sim::StateVectorSimulator;
+use ketgrid_sim::{EntanglementInfo, StateVectorSimulator, compute_entanglement_info};
 
 use crate::circuit_view::{CircuitView, GateHitResult, GateInteraction};
 use crate::editor::{ClipboardContent, DropTarget, EditorState};
+use crate::examples::ExampleLibrary;
 use crate::gate_palette::{GatePalette, PaletteSelection};
+use crate::history::{EditHistory, EditOperation};
 use crate::state_view::StateView;
+use crate::stats_panel::StatsPanel;
 
 /// Memory estimation constants for state vector simulation.
 const BYTES_PER_COMPLEX: usize = 16; // Complex<f64> = 2 * 8 bytes
+
+/// Debounce duration for auto-simulation after edits.
+const DEBOUNCE_DURATION: Duration = Duration::from_millis(100);
+
+/// Maximum qubits for automatic simulation. Above this, require manual trigger.
+const AUTO_SIM_MAX_QUBITS: usize = 15;
+
+/// Distinct colors for entanglement clusters (up to 8 before cycling).
+const ENTANGLEMENT_PALETTE: [egui::Color32; 8] = [
+    egui::Color32::from_rgb(255, 100, 100), // Red
+    egui::Color32::from_rgb(100, 160, 255), // Blue
+    egui::Color32::from_rgb(100, 220, 100), // Green
+    egui::Color32::from_rgb(200, 130, 255), // Purple
+    egui::Color32::from_rgb(255, 180, 60),  // Orange
+    egui::Color32::from_rgb(255, 120, 200), // Pink
+    egui::Color32::from_rgb(60, 220, 200),  // Teal
+    egui::Color32::from_rgb(220, 200, 80),  // Yellow
+];
+
+/// Maps entanglement clusters to per-qubit wire colors.
+///
+/// Entangled qubits get a cluster color from the palette; unentangled qubits get `None`.
+fn entanglement_wire_colors(info: &EntanglementInfo) -> Vec<Option<egui::Color32>> {
+    let n = info.qubit_purities.len();
+    let mut wire_colors = vec![None; n];
+
+    let mut color_idx = 0usize;
+    for cluster in &info.clusters {
+        if cluster.len() > 1 {
+            let color = ENTANGLEMENT_PALETTE[color_idx % ENTANGLEMENT_PALETTE.len()];
+            for &q in cluster {
+                wire_colors[q] = Some(color);
+            }
+            color_idx += 1;
+        }
+    }
+
+    wire_colors
+}
+
+/// Actions from the stepper toolbar (processed outside the UI closure).
+enum StepperAction {
+    Enter,
+    Exit,
+    Reset,
+    Back,
+    Forward,
+    TogglePlay,
+}
 
 /// Actions that can be triggered from the context menu.
 enum ContextMenuAction {
@@ -77,12 +132,46 @@ pub struct KetGridApp {
     circuit_view: CircuitView,
     /// State visualization panel state.
     state_view: StateView,
+    /// Circuit statistics panel state.
+    stats_panel: StatsPanel,
+    /// Example library browser.
+    example_library: ExampleLibrary,
     /// Editor state for drag-and-drop gate placement.
     editor_state: EditorState,
+    /// Undo/redo history for circuit edits.
+    history: EditHistory,
     /// Path to the currently open file (for Save vs Save As).
     current_file_path: Option<std::path::PathBuf>,
     /// Status message for file operations.
     file_status: Option<String>,
+    /// Timestamp of the most recent circuit edit (for debounce).
+    sim_dirty_since: Option<Instant>,
+    /// Sender half of background simulation result channel.
+    sim_result_tx: mpsc::Sender<StateVectorSimulator>,
+    /// Receiver half of background simulation result channel.
+    sim_result_rx: mpsc::Receiver<StateVectorSimulator>,
+    /// Whether a background simulation thread is currently running.
+    sim_running: bool,
+    /// Whether displayed simulation results are outdated.
+    sim_stale: bool,
+    /// Whether step-through mode is active.
+    step_mode: bool,
+    /// Current step position: 0 = |0…0⟩, k = first k unique columns applied.
+    step_position: usize,
+    /// Sorted unique gate column indices for the current circuit.
+    step_columns: Vec<usize>,
+    /// Simulator state at the current step position.
+    step_simulator: Option<StateVectorSimulator>,
+    /// Whether auto-play is advancing through steps.
+    step_playing: bool,
+    /// Timestamp of the last auto-play advance.
+    step_last_advance: Option<Instant>,
+    /// Cached entanglement info for the current simulation state.
+    entanglement_info: Option<EntanglementInfo>,
+    /// Cached per-qubit wire colors derived from entanglement clusters.
+    entanglement_colors: Vec<Option<egui::Color32>>,
+    /// Earliest modified column since last simulation (for incremental updates).
+    dirty_column: Option<usize>,
 }
 
 impl KetGridApp {
@@ -95,9 +184,14 @@ impl KetGridApp {
         let _ = circuit.add_measurement(0, 2);
         let _ = circuit.add_measurement(1, 2);
 
-        // Create simulator and apply the circuit
+        // Create simulator and apply the circuit (sync for initial small demo)
         let mut sim = StateVectorSimulator::new(circuit.num_qubits());
         sim.apply_circuit(&circuit);
+
+        let (sim_result_tx, sim_result_rx) = mpsc::channel();
+
+        let ent_info = compute_entanglement_info(sim.state());
+        let ent_colors = entanglement_wire_colors(&ent_info);
 
         Self {
             simulator: Some(sim),
@@ -105,9 +199,26 @@ impl KetGridApp {
             gate_palette: GatePalette::default(),
             circuit_view: CircuitView::default(),
             state_view: StateView::default(),
+            stats_panel: StatsPanel::default(),
+            example_library: ExampleLibrary::default(),
             editor_state: EditorState::default(),
+            history: EditHistory::default(),
             current_file_path: None,
             file_status: None,
+            sim_dirty_since: None,
+            sim_result_tx,
+            sim_result_rx,
+            sim_running: false,
+            sim_stale: false,
+            step_mode: false,
+            step_position: 0,
+            step_columns: Vec::new(),
+            step_simulator: None,
+            step_playing: false,
+            step_last_advance: None,
+            entanglement_info: Some(ent_info),
+            entanglement_colors: ent_colors,
+            dirty_column: None,
         }
     }
 
@@ -121,12 +232,14 @@ impl KetGridApp {
         {
             match Circuit::from_json_file(&path) {
                 Ok(loaded_circuit) => {
-                    self.circuit = loaded_circuit;
+                    let old = std::mem::replace(&mut self.circuit, loaded_circuit);
+                    self.history
+                        .push(EditOperation::ReplaceCircuit { old_circuit: old });
                     self.current_file_path = Some(path.clone());
                     self.editor_state.cancel_pending();
                     self.gate_palette.clear_selection();
                     self.editor_state.clear_selection();
-                    self.refresh_simulation();
+                    self.mark_sim_dirty();
                     self.file_status =
                         Some(format!("Loaded: {}", path.file_stem().unwrap_or_default().to_string_lossy()));
                 }
@@ -184,11 +297,402 @@ impl KetGridApp {
         }
     }
 
-    /// Re-run simulation when circuit changes.
-    fn refresh_simulation(&mut self) {
-        let mut sim = StateVectorSimulator::new(self.circuit.num_qubits());
-        sim.apply_circuit(&self.circuit);
-        self.simulator = Some(sim);
+    /// Show export dialog and save circuit as Qiskit Python code.
+    fn export_qiskit_dialog(&mut self) {
+        use ketgrid_core::format::qiskit::circuit_to_qiskit;
+
+        // Generate the Python code
+        match circuit_to_qiskit(&self.circuit) {
+            Ok(python_code) => {
+                // Show save dialog
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("Python Files", &["py"])
+                    .add_filter("All Files", &["*"])
+                    .set_directory(std::env::current_dir().unwrap_or_default())
+                    .set_file_name("circuit.py")
+                    .save_file()
+                {
+                    // Ensure the file has .py extension
+                    let path_with_ext = if path.extension().is_none() {
+                        path.with_extension("py")
+                    } else {
+                        path
+                    };
+
+                    match std::fs::write(&path_with_ext, python_code) {
+                        Ok(()) => {
+                            self.file_status = Some(format!(
+                                "Exported to Qiskit: {}",
+                                path_with_ext.file_stem().unwrap_or_default().to_string_lossy()
+                            ));
+                        }
+                        Err(e) => {
+                            self.file_status = Some(format!("Error exporting: {}", e));
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                self.file_status = Some(format!("Export failed: {}", e));
+            }
+        }
+    }
+
+    /// Show import dialog and load an OpenQASM 2.0 file as a circuit.
+    fn import_qasm_dialog(&mut self) {
+        use ketgrid_core::format::qasm::circuit_from_qasm;
+
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("OpenQASM Files", &["qasm"])
+            .add_filter("All Files", &["*"])
+            .set_directory(std::env::current_dir().unwrap_or_default())
+            .pick_file()
+        {
+            match std::fs::read_to_string(&path) {
+                Ok(contents) => match circuit_from_qasm(&contents) {
+                    Ok(result) => {
+                        let old = std::mem::replace(&mut self.circuit, result.circuit);
+                        self.history
+                            .push(EditOperation::ReplaceCircuit { old_circuit: old });
+                        self.current_file_path = None;
+                        self.editor_state.cancel_pending();
+                        self.gate_palette.clear_selection();
+                        self.editor_state.clear_selection();
+                        self.mark_sim_dirty();
+
+                        if result.warnings.is_empty() {
+                            self.file_status = Some(format!(
+                                "Imported: {}",
+                                path.file_stem().unwrap_or_default().to_string_lossy()
+                            ));
+                        } else {
+                            self.file_status = Some(format!(
+                                "Imported with {} warning(s): {}",
+                                result.warnings.len(),
+                                path.file_stem().unwrap_or_default().to_string_lossy()
+                            ));
+                        }
+                    }
+                    Err(e) => {
+                        self.file_status = Some(format!("Import failed: {}", e));
+                    }
+                },
+                Err(e) => {
+                    self.file_status = Some(format!("Error reading file: {}", e));
+                }
+            }
+        }
+    }
+
+    /// Show export dialog and save circuit as OpenQASM 2.0 code.
+    fn export_qasm_dialog(&mut self) {
+        use ketgrid_core::format::qasm::circuit_to_qasm;
+
+        // Generate the OpenQASM code
+        match circuit_to_qasm(&self.circuit) {
+            Ok(qasm_code) => {
+                // Show save dialog
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("OpenQASM Files", &["qasm"])
+                    .add_filter("All Files", &["*"])
+                    .set_directory(std::env::current_dir().unwrap_or_default())
+                    .set_file_name("circuit.qasm")
+                    .save_file()
+                {
+                    // Ensure the file has .qasm extension
+                    let path_with_ext = if path.extension().is_none() {
+                        path.with_extension("qasm")
+                    } else {
+                        path
+                    };
+
+                    match std::fs::write(&path_with_ext, qasm_code) {
+                        Ok(()) => {
+                            self.file_status = Some(format!(
+                                "Exported to OpenQASM: {}",
+                                path_with_ext.file_stem().unwrap_or_default().to_string_lossy()
+                            ));
+                        }
+                        Err(e) => {
+                            self.file_status = Some(format!("Error exporting: {}", e));
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                self.file_status = Some(format!("Export failed: {}", e));
+            }
+        }
+    }
+
+    /// Show export dialog and save circuit as SVG vector graphic.
+    fn export_svg_dialog(&mut self) {
+        use ketgrid_core::format::svg::circuit_to_svg;
+
+        // Generate the SVG
+        match circuit_to_svg(&self.circuit) {
+            Ok(svg_code) => {
+                // Show save dialog
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("SVG Files", &["svg"])
+                    .add_filter("All Files", &["*"])
+                    .set_directory(std::env::current_dir().unwrap_or_default())
+                    .set_file_name("circuit.svg")
+                    .save_file()
+                {
+                    // Ensure the file has .svg extension
+                    let path_with_ext = if path.extension().is_none() {
+                        path.with_extension("svg")
+                    } else {
+                        path
+                    };
+
+                    match std::fs::write(&path_with_ext, svg_code) {
+                        Ok(()) => {
+                            self.file_status = Some(format!(
+                                "Exported to SVG: {}",
+                                path_with_ext.file_stem().unwrap_or_default().to_string_lossy()
+                            ));
+                        }
+                        Err(e) => {
+                            self.file_status = Some(format!("Error exporting: {}", e));
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                self.file_status = Some(format!("Export failed: {}", e));
+            }
+        }
+    }
+
+    /// Mark the simulation as needing a refresh after the debounce period.
+    ///
+    /// For circuits with ≤ [`AUTO_SIM_MAX_QUBITS`] qubits, auto-simulation is
+    /// scheduled after [`DEBOUNCE_DURATION`]. Larger circuits require a manual
+    /// trigger via [`force_simulate`].
+    fn mark_sim_dirty(&mut self) {
+        self.mark_sim_dirty_at(None);
+    }
+
+    /// Mark the simulation as dirty, optionally recording the modified column
+    /// for incremental re-simulation.
+    fn mark_sim_dirty_at(&mut self, column: Option<usize>) {
+        self.sim_stale = true;
+        if let Some(col) = column {
+            self.dirty_column = Some(match self.dirty_column {
+                Some(existing) => existing.min(col),
+                None => col,
+            });
+        } else {
+            // Full re-simulation needed (circuit structure changed).
+            self.dirty_column = None;
+            self.simulator = None;
+        }
+        if let Some(ref sim) = self.simulator {
+            if sim.num_qubits() != self.circuit.num_qubits() {
+                self.simulator = None;
+                self.dirty_column = None;
+            }
+        }
+        if self.circuit.num_qubits() <= AUTO_SIM_MAX_QUBITS {
+            self.sim_dirty_since = Some(Instant::now());
+        }
+        if self.step_mode {
+            self.step_columns = Self::compute_step_columns(&self.circuit);
+            self.step_position = self.step_position.min(self.step_columns.len());
+            self.step_playing = false;
+            self.rebuild_step_simulator();
+        }
+    }
+
+    /// Spawn a background thread to run the simulation on a clone of the circuit.
+    ///
+    /// Uses incremental simulation when a previous simulator with column
+    /// checkpoints is available and only a subset of columns changed.
+    /// Falls back to optimized full simulation (with gate fusion) otherwise.
+    fn start_background_sim(&mut self) {
+        let circuit = self.circuit.clone();
+        let tx = self.sim_result_tx.clone();
+        let existing_sim = self.simulator.take();
+        let dirty_col = self.dirty_column.take();
+        self.sim_running = true;
+        std::thread::spawn(move || {
+            let sim = match (existing_sim, dirty_col) {
+                (Some(mut sim), Some(col)) if sim.num_qubits() == circuit.num_qubits() => {
+                    sim.apply_circuit_from_column(&circuit, col);
+                    sim
+                }
+                _ => {
+                    let mut sim = StateVectorSimulator::new(circuit.num_qubits());
+                    sim.apply_circuit_optimized(&circuit);
+                    sim
+                }
+            };
+            let _ = tx.send(sim);
+        });
+    }
+
+    /// Recompute cached entanglement info from the given simulator state.
+    fn update_entanglement(&mut self, state: &ketgrid_sim::state_vector::StateVector) {
+        let info = compute_entanglement_info(state);
+        self.entanglement_colors = entanglement_wire_colors(&info);
+        self.entanglement_info = Some(info);
+    }
+
+    /// Poll for completed background simulations and fire the debounce timer.
+    fn poll_simulation_results(&mut self, ctx: &egui::Context) {
+        if let Ok(sim) = self.sim_result_rx.try_recv() {
+            self.update_entanglement(sim.state());
+            self.simulator = Some(sim);
+            self.sim_running = false;
+            if self.sim_dirty_since.is_none() {
+                self.sim_stale = false;
+            }
+        }
+
+        if let Some(dirty_since) = self.sim_dirty_since {
+            let elapsed = dirty_since.elapsed();
+            if elapsed >= DEBOUNCE_DURATION && !self.sim_running {
+                self.sim_dirty_since = None;
+                self.start_background_sim();
+            } else if elapsed < DEBOUNCE_DURATION {
+                ctx.request_repaint_after(DEBOUNCE_DURATION - elapsed);
+            }
+        }
+
+        if self.sim_running {
+            ctx.request_repaint_after(Duration::from_millis(16));
+        }
+    }
+
+    /// Immediately start a background simulation (for manual trigger).
+    fn force_simulate(&mut self) {
+        if !self.sim_running && self.circuit.num_qubits() > 0 {
+            self.sim_dirty_since = None;
+            self.start_background_sim();
+        }
+    }
+
+    /// Compute sorted unique gate column indices from the circuit.
+    fn compute_step_columns(circuit: &Circuit) -> Vec<usize> {
+        let mut cols: Vec<usize> = circuit.gates.iter().map(|g| g.column).collect();
+        cols.sort_unstable();
+        cols.dedup();
+        cols
+    }
+
+    /// Enter step-through mode: reset to |0…0⟩ at position 0.
+    fn enter_step_mode(&mut self) {
+        self.step_mode = true;
+        self.step_playing = false;
+        self.step_last_advance = None;
+        self.step_columns = Self::compute_step_columns(&self.circuit);
+        self.step_position = 0;
+        self.rebuild_step_simulator();
+    }
+
+    /// Exit step-through mode and return to normal simulation.
+    fn exit_step_mode(&mut self) {
+        self.step_mode = false;
+        self.step_playing = false;
+        self.step_last_advance = None;
+        self.step_simulator = None;
+        self.step_columns.clear();
+        self.step_position = 0;
+    }
+
+    /// Advance one step forward. Returns true if a step was taken.
+    fn step_forward(&mut self) -> bool {
+        if self.step_position >= self.step_columns.len() {
+            return false;
+        }
+        let col = self.step_columns[self.step_position];
+        self.step_position += 1;
+
+        let has_sim = self.step_simulator.is_some();
+        if has_sim {
+            let mut sim = self.step_simulator.take().unwrap();
+            sim.apply_column(&self.circuit, col);
+            self.update_entanglement(sim.state());
+            self.step_simulator = Some(sim);
+        } else {
+            self.rebuild_step_simulator();
+        }
+        true
+    }
+
+    /// Go back one step (re-simulates from |0…0⟩).
+    fn step_back(&mut self) {
+        if self.step_position == 0 {
+            return;
+        }
+        self.step_position -= 1;
+        self.rebuild_step_simulator();
+    }
+
+    /// Reset to step 0 (initial |0…0⟩ state).
+    fn step_reset(&mut self) {
+        self.step_position = 0;
+        self.step_playing = false;
+        self.rebuild_step_simulator();
+    }
+
+    /// Rebuild the step simulator from scratch for the current step_position.
+    fn rebuild_step_simulator(&mut self) {
+        let num_qubits = self.circuit.num_qubits();
+        if num_qubits == 0 {
+            self.step_simulator = None;
+            return;
+        }
+        let mut sim = StateVectorSimulator::new(num_qubits);
+        if self.step_position > 0 {
+            let max_col = self.step_columns[self.step_position - 1];
+            sim.apply_columns_up_to(&self.circuit, max_col);
+        }
+        self.update_entanglement(sim.state());
+        self.step_simulator = Some(sim);
+    }
+
+    /// Compute the cursor column for the circuit view.
+    /// Returns the column index at which to draw the step cursor line.
+    /// Gates at columns < this value are "applied"; gates >= are dimmed.
+    fn step_cursor_col(&self) -> Option<usize> {
+        if !self.step_mode {
+            return None;
+        }
+        if self.step_position == 0 {
+            Some(0)
+        } else if self.step_position >= self.step_columns.len() {
+            Some(self.circuit.max_column() + 1)
+        } else {
+            Some(self.step_columns[self.step_position])
+        }
+    }
+
+    /// Auto-advance playback if playing.
+    fn poll_step_playback(&mut self, ctx: &egui::Context) {
+        if !self.step_playing {
+            return;
+        }
+
+        const STEP_DELAY: Duration = Duration::from_millis(500);
+
+        if let Some(last) = self.step_last_advance {
+            if last.elapsed() >= STEP_DELAY {
+                if !self.step_forward() {
+                    self.step_playing = false;
+                } else {
+                    self.step_last_advance = Some(Instant::now());
+                }
+            }
+        } else {
+            self.step_last_advance = Some(Instant::now());
+        }
+
+        if self.step_playing {
+            ctx.request_repaint_after(Duration::from_millis(16));
+        }
     }
 
     /// Render the context menu if open.
@@ -350,13 +854,18 @@ impl KetGridApp {
         if target_qubits.iter().all(|&q| q < num_qubits)
             && control_qubits.iter().all(|&q| q < num_qubits)
         {
-            let _ = self.circuit.add_gate(
-                gate.gate.clone(),
-                target_qubits,
-                control_qubits,
-                target_column,
-            );
-            self.refresh_simulation();
+            if self
+                .circuit
+                .add_gate(gate.gate.clone(), target_qubits, control_qubits, target_column)
+                .is_ok()
+            {
+                let idx = self.circuit.gates.len() - 1;
+                self.history.push(EditOperation::AddGate {
+                    index: idx,
+                    gate: self.circuit.gates[idx].clone(),
+                });
+                self.mark_sim_dirty();
+            }
         }
     }
 
@@ -410,14 +919,25 @@ impl KetGridApp {
             if should_apply {
                 if let Some(theta) = new_theta {
                     if let Some(gate) = self.circuit.gates.get(gate_idx) {
+                        let old_gate_type = gate.gate.clone();
                         let new_gate_type = match gate.gate {
                             GateType::Rx(_) => GateType::Rx(theta),
                             GateType::Ry(_) => GateType::Ry(theta),
                             GateType::Rz(_) => GateType::Rz(theta),
                             _ => gate.gate.clone(),
                         };
-                        let _ = self.circuit.update_gate_parameters(gate_idx, new_gate_type);
-                        self.refresh_simulation();
+                        if self
+                            .circuit
+                            .update_gate_parameters(gate_idx, new_gate_type.clone())
+                            .is_ok()
+                        {
+                            self.history.push(EditOperation::EditParam {
+                                gate_index: gate_idx,
+                                old_gate_type,
+                                new_gate_type,
+                            });
+                            self.mark_sim_dirty();
+                        }
                     }
                 }
             }
@@ -430,17 +950,24 @@ impl KetGridApp {
 
     /// Handle deleting a gate.
     fn handle_delete_gate(&mut self, gate_idx: usize) {
-        if self.circuit.remove_gate(gate_idx).is_some() {
-            // Clear selection if the deleted gate was selected
+        if let Some(removed) = self.circuit.remove_gate(gate_idx) {
+            self.history.push(EditOperation::RemoveGate {
+                index: gate_idx,
+                gate: removed,
+            });
             self.editor_state.clear_selection();
-            self.refresh_simulation();
+            self.mark_sim_dirty();
         }
     }
 
     /// Handle deleting a measurement.
     fn handle_delete_measurement(&mut self, measurement_idx: usize) {
-        if self.circuit.remove_measurement(measurement_idx).is_some() {
-            self.refresh_simulation();
+        if let Some(removed) = self.circuit.remove_measurement(measurement_idx) {
+            self.history.push(EditOperation::RemoveMeasurement {
+                index: measurement_idx,
+                measurement: removed,
+            });
+            self.mark_sim_dirty();
         }
     }
 
@@ -470,21 +997,112 @@ impl KetGridApp {
             }
         }
     }
+
+    /// Handle copy operation (copies the first selected gate).
+    fn handle_copy(&mut self) {
+        // Find the first selected gate
+        if let Some(gate_id) = self.editor_state.selected_gates.iter().next() {
+            if let Some(gate) = self.circuit.gates.get(gate_id.index) {
+                self.editor_state.copy_gate(gate);
+            }
+        }
+    }
+
+    /// Handle delete key - removes all selected gates and measurements.
+    fn handle_delete_selected(&mut self) {
+        // Collect selected gate indices (sort in reverse order to remove from end first)
+        let mut gate_indices: Vec<usize> = self
+            .editor_state
+            .selected_gates
+            .iter()
+            .map(|g| g.index)
+            .collect();
+        gate_indices.sort_unstable_by(|a, b| b.cmp(a)); // Reverse order
+
+        // Remove gates (from highest index to lowest to avoid index shifting issues)
+        for idx in gate_indices {
+            if let Some(removed) = self.circuit.remove_gate(idx) {
+                self.history.push(EditOperation::RemoveGate {
+                    index: idx,
+                    gate: removed,
+                });
+            }
+        }
+
+        // Clear selection after deletion
+        if !self.editor_state.selected_gates.is_empty() {
+            self.editor_state.clear_selection();
+            self.mark_sim_dirty();
+        }
+    }
+
+    /// Handle add qubit (+ key).
+    fn handle_add_qubit(&mut self) {
+        self.circuit.add_qubit();
+        self.history.push(EditOperation::AddQubit);
+        self.mark_sim_dirty();
+    }
+
+    /// Handle remove qubit (- key) - removes the last qubit if it has no gates.
+    fn handle_remove_qubit(&mut self) {
+        let num_qubits = self.circuit.num_qubits();
+        if num_qubits == 0 {
+            return;
+        }
+
+        // Try to remove the last qubit
+        let last_qubit_id = num_qubits - 1;
+
+        // Check if we can get the wire info before removing (for undo)
+        if let Some(wire) = self.circuit.qubits.get(last_qubit_id).cloned() {
+            match self.circuit.remove_qubit(last_qubit_id) {
+                Ok(()) => {
+                    self.history.push(EditOperation::RemoveQubit {
+                        qubit_id: last_qubit_id,
+                        wire,
+                    });
+                    self.editor_state.clear_selection();
+                    self.mark_sim_dirty();
+                }
+                Err(_) => {
+                    // Qubit in use, can't remove - could add visual feedback here
+                }
+            }
+        }
+    }
 }
 
 impl eframe::App for KetGridApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Handle example library
+        if let Some(circuit) = self.example_library.show(ctx) {
+            let old = std::mem::replace(&mut self.circuit, circuit);
+            self.history
+                .push(EditOperation::ReplaceCircuit { old_circuit: old });
+            self.current_file_path = None;
+            self.editor_state.cancel_pending();
+            self.gate_palette.clear_selection();
+            self.editor_state.clear_selection();
+            self.mark_sim_dirty();
+            self.file_status = Some("Example loaded".to_string());
+        }
+
+        self.poll_simulation_results(ctx);
+        self.poll_step_playback(ctx);
+
         // Top menu bar
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("New Circuit").clicked() {
-                        self.circuit = Circuit::new(3);
+                        let old = std::mem::replace(&mut self.circuit, Circuit::new(3));
+                        self.history
+                            .push(EditOperation::ReplaceCircuit { old_circuit: old });
                         self.current_file_path = None;
                         self.editor_state.cancel_pending();
                         self.gate_palette.clear_selection();
                         self.editor_state.clear_selection();
-                        self.refresh_simulation();
+                        self.mark_sim_dirty();
                         self.file_status = Some("New circuit created".to_string());
                         ui.close_menu();
                     }
@@ -492,6 +1110,24 @@ impl eframe::App for KetGridApp {
                         self.open_file_dialog();
                         ui.close_menu();
                     }
+                    ui.menu_button("Examples", |ui| {
+                        if ui.button("Browse Library…").clicked() {
+                            self.example_library.open();
+                            ui.close_menu();
+                        }
+                        ui.separator();
+                        if let Some(circuit) = self.example_library.show_compact(ui) {
+                            let old = std::mem::replace(&mut self.circuit, circuit);
+                            self.history
+                                .push(EditOperation::ReplaceCircuit { old_circuit: old });
+                            self.current_file_path = None;
+                            self.editor_state.cancel_pending();
+                            self.gate_palette.clear_selection();
+                            self.editor_state.clear_selection();
+                            self.mark_sim_dirty();
+                            self.file_status = Some("Example loaded".to_string());
+                        }
+                    });
                     if ui.button("Save").clicked() {
                         self.save_file_dialog();
                         ui.close_menu();
@@ -501,14 +1137,64 @@ impl eframe::App for KetGridApp {
                         ui.close_menu();
                     }
                     ui.separator();
+                    if ui.button("Export to Qiskit…").clicked() {
+                        self.export_qiskit_dialog();
+                        ui.close_menu();
+                    }
+                    if ui.button("Export to OpenQASM…").clicked() {
+                        self.export_qasm_dialog();
+                        ui.close_menu();
+                    }
+                    if ui.button("Export to SVG…").clicked() {
+                        self.export_svg_dialog();
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                    if ui.button("Import from OpenQASM…").clicked() {
+                        self.import_qasm_dialog();
+                        ui.close_menu();
+                    }
+                    ui.separator();
                     if ui.button("Quit").clicked() {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 });
                 ui.menu_button("Edit", |ui| {
+                    let undo_label = if self.history.can_undo() {
+                        "Undo  Ctrl+Z"
+                    } else {
+                        "Undo"
+                    };
+                    if ui
+                        .add_enabled(self.history.can_undo(), egui::Button::new(undo_label))
+                        .clicked()
+                    {
+                        if self.history.undo(&mut self.circuit) {
+                            self.editor_state.clear_selection();
+                            self.mark_sim_dirty();
+                        }
+                        ui.close_menu();
+                    }
+                    let redo_label = if self.history.can_redo() {
+                        "Redo  Ctrl+Y"
+                    } else {
+                        "Redo"
+                    };
+                    if ui
+                        .add_enabled(self.history.can_redo(), egui::Button::new(redo_label))
+                        .clicked()
+                    {
+                        if self.history.redo(&mut self.circuit) {
+                            self.editor_state.clear_selection();
+                            self.mark_sim_dirty();
+                        }
+                        ui.close_menu();
+                    }
+                    ui.separator();
                     if ui.button("Add Qubit").clicked() {
                         self.circuit.add_qubit();
-                        self.refresh_simulation();
+                        self.history.push(EditOperation::AddQubit);
+                        self.mark_sim_dirty();
                         ui.close_menu();
                     }
                 });
@@ -566,33 +1252,147 @@ impl eframe::App for KetGridApp {
         };
 
         // Right panel: State view
+        let sim_stale = self.sim_stale;
+        let sim_running = self.sim_running;
+        let circuit_qubits = self.circuit.num_qubits();
+        let in_step_mode = self.step_mode;
+        let step_pos = self.step_position;
+        let step_total = self.step_columns.len();
+        let mut should_force_sim = false;
+
         egui::SidePanel::right("state_view")
             .resizable(true)
             .default_width(280.0)
             .show(ctx, |ui| {
-                ui.heading("State");
+                ui.horizontal(|ui| {
+                    ui.heading("State");
+                    if in_step_mode {
+                        ui.colored_label(
+                            egui::Color32::from_rgb(0, 200, 255),
+                            format!("Step {}/{}", step_pos, step_total),
+                        );
+                    } else if circuit_qubits > AUTO_SIM_MAX_QUBITS && !sim_running {
+                        if ui.button("▶ Simulate").clicked() {
+                            should_force_sim = true;
+                        }
+                    }
+                });
+
+                if !in_step_mode && sim_stale {
+                    if sim_running {
+                        ui.horizontal(|ui| {
+                            ui.spinner();
+                            ui.colored_label(
+                                egui::Color32::from_rgb(200, 200, 100),
+                                "Simulating…",
+                            );
+                        });
+                    } else if circuit_qubits > AUTO_SIM_MAX_QUBITS {
+                        ui.colored_label(
+                            egui::Color32::from_rgb(200, 200, 100),
+                            "Results outdated — click Simulate",
+                        );
+                    }
+                }
+
                 ui.separator();
-                if let Some(ref sim) = self.simulator {
-                    self.state_view.show(ui, sim.state());
+
+                // Circuit statistics panel
+                self.stats_panel.show(ui, &self.circuit);
+
+                ui.add_space(8.0);
+                ui.separator();
+
+                let active_sim = if in_step_mode {
+                    self.step_simulator.as_ref()
+                } else {
+                    self.simulator.as_ref()
+                };
+                if let Some(sim) = active_sim {
+                    let ent_data = self.entanglement_info.as_ref()
+                        .map(|info| (info, self.entanglement_colors.as_slice()));
+                    self.state_view.show(ui, sim.state(), ent_data);
                 }
             });
+
+        if should_force_sim {
+            self.force_simulate();
+        }
 
         // Central panel: Circuit editor with drop zones
         let mut clicked_target: Option<DropTarget> = None;
         let mut gate_outcome = None;
         let mut measurement_outcome = None;
+        let mut stepper_action: Option<StepperAction> = None;
+        let step_cursor = self.step_cursor_col();
+
         egui::CentralPanel::default().show(ctx, |ui| {
+            // Stepper toolbar
+            ui.horizontal(|ui| {
+                let in_step = self.step_mode;
+                if ui.selectable_label(in_step, "Step Mode").clicked() {
+                    stepper_action = Some(if in_step {
+                        StepperAction::Exit
+                    } else {
+                        StepperAction::Enter
+                    });
+                }
+
+                if in_step {
+                    ui.separator();
+                    if ui.button("⏮ Reset").clicked() {
+                        stepper_action = Some(StepperAction::Reset);
+                    }
+                    let can_back = self.step_position > 0;
+                    if ui.add_enabled(can_back, egui::Button::new("◀ Back")).clicked() {
+                        stepper_action = Some(StepperAction::Back);
+                    }
+                    let can_fwd = self.step_position < self.step_columns.len();
+                    if ui.add_enabled(can_fwd, egui::Button::new("▶ Fwd")).clicked() {
+                        stepper_action = Some(StepperAction::Forward);
+                    }
+                    let play_label = if self.step_playing { "⏸ Pause" } else { "⏵ Play" };
+                    if ui.add_enabled(can_fwd || self.step_playing, egui::Button::new(play_label)).clicked() {
+                        stepper_action = Some(StepperAction::TogglePlay);
+                    }
+                    ui.separator();
+                    ui.label(format!(
+                        "Step {}/{}",
+                        self.step_position, self.step_columns.len()
+                    ));
+                }
+            });
+            ui.separator();
+
             let (target, outcome, meas_outcome) = self.circuit_view.show(
                 ui,
                 &self.circuit,
                 active_gate.as_ref(),
                 is_measurement_mode,
                 &self.editor_state,
+                step_cursor,
+                &self.entanglement_colors,
             );
             clicked_target = target;
             gate_outcome = outcome;
             measurement_outcome = meas_outcome;
         });
+
+        // Process stepper actions outside the closure
+        match stepper_action {
+            Some(StepperAction::Enter) => self.enter_step_mode(),
+            Some(StepperAction::Exit) => self.exit_step_mode(),
+            Some(StepperAction::Reset) => self.step_reset(),
+            Some(StepperAction::Back) => self.step_back(),
+            Some(StepperAction::Forward) => { self.step_forward(); }
+            Some(StepperAction::TogglePlay) => {
+                self.step_playing = !self.step_playing;
+                if self.step_playing {
+                    self.step_last_advance = Some(Instant::now());
+                }
+            }
+            None => {}
+        }
 
         // Handle gate clicks (selection, context menu)
         if let Some(outcome) = gate_outcome {
@@ -634,11 +1434,19 @@ impl eframe::App for KetGridApp {
         // Handle measurement placement
         if is_measurement_mode {
             if let Some(target) = clicked_target {
-                let _ = self
+                if self
                     .circuit
-                    .add_measurement(target.qubit_idx, target.column);
-                self.gate_palette.clear_selection();
-                self.refresh_simulation();
+                    .add_measurement(target.qubit_idx, target.column)
+                    .is_ok()
+                {
+                    let idx = self.circuit.measurements.len() - 1;
+                    self.history.push(EditOperation::AddMeasurement {
+                        index: idx,
+                        measurement: self.circuit.measurements[idx].clone(),
+                    });
+                    self.gate_palette.clear_selection();
+                    self.mark_sim_dirty();
+                }
             }
 
             // Handle drag-drop for measurement
@@ -649,11 +1457,19 @@ impl eframe::App for KetGridApp {
                         if let Some(target) =
                             self.circuit_view.hit_test(pos, self.circuit.num_qubits())
                         {
-                            let _ = self
+                            if self
                                 .circuit
-                                .add_measurement(target.qubit_idx, target.column);
-                            self.gate_palette.clear_selection();
-                            self.refresh_simulation();
+                                .add_measurement(target.qubit_idx, target.column)
+                                .is_ok()
+                            {
+                                let idx = self.circuit.measurements.len() - 1;
+                                self.history.push(EditOperation::AddMeasurement {
+                                    index: idx,
+                                    measurement: self.circuit.measurements[idx].clone(),
+                                });
+                                self.gate_palette.clear_selection();
+                                self.mark_sim_dirty();
+                            }
                         }
                     }
                 }
@@ -661,16 +1477,26 @@ impl eframe::App for KetGridApp {
         } else if let (Some(target), Some(gate)) = (clicked_target, &active_gate) {
             // Handle gate placement from circuit view click
             if let Some(placement) = self.editor_state.try_place(gate, target) {
-                let _ = self.circuit.add_gate(
-                    placement.gate,
-                    placement.target_qubits,
-                    placement.control_qubits,
-                    placement.column,
-                );
-                if !self.editor_state.is_awaiting_more_qubits() {
-                    self.gate_palette.clear_selection();
+                if self
+                    .circuit
+                    .add_gate(
+                        placement.gate,
+                        placement.target_qubits,
+                        placement.control_qubits,
+                        placement.column,
+                    )
+                    .is_ok()
+                {
+                    let idx = self.circuit.gates.len() - 1;
+                    self.history.push(EditOperation::AddGate {
+                        index: idx,
+                        gate: self.circuit.gates[idx].clone(),
+                    });
+                    if !self.editor_state.is_awaiting_more_qubits() {
+                        self.gate_palette.clear_selection();
+                    }
+                    self.mark_sim_dirty();
                 }
-                self.refresh_simulation();
             }
         }
 
@@ -684,16 +1510,26 @@ impl eframe::App for KetGridApp {
                             self.circuit_view.hit_test(pos, self.circuit.num_qubits())
                         {
                             if let Some(placement) = self.editor_state.try_place(gate, target) {
-                                let _ = self.circuit.add_gate(
-                                    placement.gate,
-                                    placement.target_qubits,
-                                    placement.control_qubits,
-                                    placement.column,
-                                );
-                                if !self.editor_state.is_awaiting_more_qubits() {
-                                    self.gate_palette.clear_selection();
+                                if self
+                                    .circuit
+                                    .add_gate(
+                                        placement.gate,
+                                        placement.target_qubits,
+                                        placement.control_qubits,
+                                        placement.column,
+                                    )
+                                    .is_ok()
+                                {
+                                    let idx = self.circuit.gates.len() - 1;
+                                    self.history.push(EditOperation::AddGate {
+                                        index: idx,
+                                        gate: self.circuit.gates[idx].clone(),
+                                    });
+                                    if !self.editor_state.is_awaiting_more_qubits() {
+                                        self.gate_palette.clear_selection();
+                                    }
+                                    self.mark_sim_dirty();
                                 }
-                                self.refresh_simulation();
                             }
                         }
                     }
@@ -701,9 +1537,53 @@ impl eframe::App for KetGridApp {
             }
         }
 
+        // Undo on Ctrl+Z (without Shift)
+        if ctx.input(|i| {
+            i.modifiers.ctrl && i.key_pressed(egui::Key::Z) && !i.modifiers.shift
+        }) {
+            if self.history.undo(&mut self.circuit) {
+                self.editor_state.clear_selection();
+                self.editor_state.cancel_pending();
+                self.gate_palette.clear_selection();
+                self.mark_sim_dirty();
+            }
+        }
+
+        // Redo on Ctrl+Y or Ctrl+Shift+Z
+        if ctx.input(|i| {
+            i.modifiers.ctrl
+                && (i.key_pressed(egui::Key::Y)
+                    || (i.key_pressed(egui::Key::Z) && i.modifiers.shift))
+        }) {
+            if self.history.redo(&mut self.circuit) {
+                self.editor_state.clear_selection();
+                self.editor_state.cancel_pending();
+                self.gate_palette.clear_selection();
+                self.mark_sim_dirty();
+            }
+        }
+
+        // Handle copy on Ctrl+C
+        if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(egui::Key::C)) {
+            self.handle_copy();
+        }
+
         // Handle paste on Ctrl+V
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(egui::Key::V)) {
             self.handle_paste();
+        }
+
+        // Handle delete key for selected gates/measurements
+        if ctx.input(|i| i.key_pressed(egui::Key::Delete)) {
+            self.handle_delete_selected();
+        }
+
+        // Handle +/- keys for qubit management
+        if ctx.input(|i| i.key_pressed(egui::Key::Plus) || i.key_pressed(egui::Key::Equals)) {
+            self.handle_add_qubit();
+        }
+        if ctx.input(|i| i.key_pressed(egui::Key::Minus)) {
+            self.handle_remove_qubit();
         }
 
         // Status bar with metrics
